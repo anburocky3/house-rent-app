@@ -124,7 +124,7 @@ export default function TenantDashboard() {
   const supportPhone =
     ownerProfile?.phone_number || ownerProfile?.emergency_contact?.phone;
   const today = new Date();
-  const isUpiPaymentWindow = today.getDate() >= 1 && today.getDate() <= 25;
+  const isUpiPaymentWindow = today.getDate() >= 1 && today.getDate() <= 3;
   const ownerUpiId =
     ownerProfile?.upi_id || process.env.NEXT_PUBLIC_OWNER_UPI_ID || "";
   const upiIntentLink = ownerUpiId
@@ -132,7 +132,7 @@ export default function TenantDashboard() {
     : "";
 
   return (
-    <div className="min-h-screen bg-zinc-100 px-4 pb-24 pt-6 font-sans text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
+    <div className="min-h-screen overflow-x-hidden bg-zinc-100 px-4 pb-24 pt-6 font-sans text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
       <main className="mx-auto flex w-full max-w-md flex-col gap-4">
         <section className="rounded-3xl border border-zinc-300 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
           <div className="flex items-center justify-between gap-3">
@@ -153,7 +153,7 @@ export default function TenantDashboard() {
           <p className="mt-3 text-5xl font-extrabold leading-none sm:text-6xl">
             {formatINR.format(amountOwed)}
           </p>
-          <p className="mt-3 text-sm opacity-90">
+          <p className="mt-3 wrap-break-word text-sm opacity-90">
             <span className="font-semibold ">{dueDateInfo.label}</span>{" "}
             <span>({dueDateInfo.daysText})</span>
           </p>
@@ -175,7 +175,7 @@ export default function TenantDashboard() {
                 Pay with GPay
               </button>
             )}
-            <div className="inline-flex min-h-12 items-center justify-center rounded-xl border border-zinc-300/50 px-4 text-center text-xs font-semibold text-zinc-100 dark:border-zinc-700 dark:text-zinc-900">
+            <div className="inline-flex min-h-12 items-center justify-center rounded-xl border border-zinc-300/50 px-4 text-center text-xs font-semibold leading-tight text-zinc-100 dark:border-zinc-700 dark:text-zinc-900">
               Cash payment can be marked by owner in app.
             </div>
           </div>
@@ -235,7 +235,7 @@ export default function TenantDashboard() {
                 <p className="mt-2 text-2xl font-extrabold text-zinc-950 dark:text-zinc-50">
                   {card.value}
                 </p>
-                <p className="mt-1 text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                <p className="mt-1 wrap-break-word text-xs font-medium text-zinc-700 dark:text-zinc-300">
                   {card.detail}
                 </p>
               </article>
@@ -267,11 +267,16 @@ export default function TenantDashboard() {
                         : "Co-tenant"}
                     </p>
                     <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                      <div className="flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
+                      <div className="flex min-w-0 items-center gap-2 rounded-xl border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
                         <span aria-hidden="true">📞</span>
                         {tenantPhone ? (
                           <>
-                            <a href={`tel:${tenantPhone}`}>{tenantPhone}</a>
+                            <a
+                              href={`tel:${tenantPhone}`}
+                              className="min-w-0 flex-1 truncate"
+                            >
+                              {tenantPhone}
+                            </a>
                             <CopyValueButton
                               value={tenantPhone}
                               label={`${displayName} phone number`}
@@ -290,9 +295,11 @@ export default function TenantDashboard() {
                             ?.toLocaleDateString() || "-"}
                         </span>
                       </div>
-                      <div className="col-span-2 flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
+                      <div className="col-span-2 flex min-w-0 items-center gap-2 rounded-xl border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
                         <span aria-hidden="true">🏠</span>
-                        <span className="truncate">{tenantAddress || "-"}</span>
+                        <span className="min-w-0 flex-1 truncate">
+                          {tenantAddress || "-"}
+                        </span>
                         {tenantAddress ? (
                           <CopyValueButton
                             value={tenantAddress}
@@ -340,9 +347,9 @@ export default function TenantDashboard() {
             </a>
           </div>
           <div className="mt-3 space-y-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            <div className="flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="flex min-w-0 items-center gap-2 rounded-xl border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
               <span aria-hidden="true">📞</span>
-              <span className="truncate">{supportPhone || "-"}</span>
+              <span className="min-w-0 flex-1 truncate">{supportPhone || "-"}</span>
               {supportPhone ? (
                 <CopyValueButton
                   value={supportPhone}
@@ -350,9 +357,9 @@ export default function TenantDashboard() {
                 />
               ) : null}
             </div>
-            <div className="flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="flex min-w-0 items-center gap-2 rounded-xl border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
               <span aria-hidden="true">🏠</span>
-              <span className="truncate">
+              <span className="min-w-0 flex-1 truncate">
                 {ownerProfile?.permanent_address || "-"}
               </span>
               {ownerProfile?.permanent_address ? (

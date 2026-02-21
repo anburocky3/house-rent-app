@@ -34,6 +34,11 @@ export type TenantProfile = {
     phone?: string;
     address?: string;
   };
+  terms_acceptance?: {
+    accepted?: boolean;
+    accepted_at?: { toDate?: () => Date };
+    version?: string;
+  };
   is_primary_tenant?: boolean;
   created_at?: { toDate?: () => Date };
   tenant_entered?: { toDate?: () => Date };
