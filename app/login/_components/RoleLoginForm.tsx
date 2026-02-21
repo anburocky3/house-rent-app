@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { z } from "zod";
 import { auth, db } from "../../../firebaseConfig";
+import type { Role, UserProfile } from "../../../types";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -18,16 +19,6 @@ import {
   setDoc,
   where,
 } from "firebase/firestore";
-
-type Role = "admin" | "tenant";
-
-type UserProfile = {
-  uid: string;
-  role: Role;
-  phone_number: string;
-  created_at?: unknown;
-  updated_at: unknown;
-};
 
 type RoleLoginFormProps = {
   role: Role;
@@ -83,22 +74,39 @@ export default function RoleLoginForm({
       );
 
       if (!phoneMatches.empty) {
-        // Found existing doc with different uid - migrate it
-        const oldDoc = phoneMatches.docs[0];
+        // Prefer an exact uid hit, otherwise migrate from first phone match
+        const oldDoc =
+          phoneMatches.docs.find((matchedDoc) => matchedDoc.id === uid) ||
+          phoneMatches.docs[0];
         existing = oldDoc.data() as UserProfile;
-        // Delete old document
-        await setDoc(doc(db, "users", oldDoc.id), { _deleted: true });
+
+        // Mark old document as soft-deleted without wiping existing fields
+        if (oldDoc.id !== uid) {
+          await setDoc(
+            doc(db, "users", oldDoc.id),
+            {
+              _deleted: true,
+              updated_at: serverTimestamp(),
+            },
+            { merge: true },
+          );
+        }
       }
     }
 
-    const resolvedRole = existing?.role ?? selectedRole;
+    const resolvedRole: Role =
+      existing?.role === "admin" || existing?.role === "tenant"
+        ? existing.role
+        : selectedRole;
 
     const profileUpdate: UserProfile = {
+      ...(existing ?? {}),
       uid,
       phone_number: normalizedPhone,
       role: resolvedRole,
       updated_at: serverTimestamp(),
       ...(existing ? {} : { created_at: serverTimestamp() }),
+      _deleted: false,
     };
 
     await setDoc(userRef, profileUpdate, { merge: true });
@@ -108,19 +116,24 @@ export default function RoleLoginForm({
 
   const ensureProfileExists = async (selectedRole: Role, phone: string) => {
     const normalizedPhone = phone.replace(/\D/g, "");
+    const constraints = [
+      where("role", "==", selectedRole),
+      where("phone_number", "==", normalizedPhone),
+    ];
+
+    if (selectedRole === "tenant") {
+      constraints.push(where("is_primary_tenant", "==", true));
+    }
+
     const matches = await getDocs(
-      query(
-        collection(db, "users"),
-        where("role", "==", selectedRole),
-        where("phone_number", "==", normalizedPhone),
-      ),
+      query(collection(db, "users"), ...constraints),
     );
 
     if (matches.empty) {
       throw new Error(
         selectedRole === "admin"
           ? "Owner account not found. Please contact support."
-          : "Tenant account not found. Please contact your landlord.",
+          : "Primary tenant account not found. Please contact your landlord.",
       );
     }
   };
