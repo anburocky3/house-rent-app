@@ -2,8 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { auth, db } from "../../../firebaseConfig";
-import { onAuthStateChanged } from "firebase/auth";
+import { db } from "../../../firebaseConfig";
 import {
   collection,
   doc,
@@ -12,6 +11,7 @@ import {
   query,
   where,
 } from "firebase/firestore";
+import { useRoleGuard } from "../../_hooks/useRoleGuard";
 
 export type TenantProfile = {
   uid?: string;
@@ -79,8 +79,12 @@ export type OwnerProfile = {
 
 export function useTenantDashboardData() {
   const router = useRouter();
-  const [isAllowed, setIsAllowed] = useState(false);
-  const [isCheckingAccess, setIsCheckingAccess] = useState(true);
+  const {
+    uid: currentUserUid,
+    profile: currentProfile,
+    isAllowed,
+    isCheckingAccess,
+  } = useRoleGuard({ role: "tenant", redirectTo: "/login" });
   const [tenantName, setTenantName] = useState("Tenant");
   const [tenantUid, setTenantUid] = useState("");
   const [propertyId, setPropertyId] = useState("");
@@ -94,41 +98,23 @@ export function useTenantDashboardData() {
   const [ownerProfile, setOwnerProfile] = useState<OwnerProfile | null>(null);
 
   useEffect(() => {
+    if (isCheckingAccess || !isAllowed || !currentUserUid) {
+      return;
+    }
+
+    const profile = (currentProfile as TenantProfile | null) ?? null;
+    const propertyRefId = profile?.property_id?.id;
+
+    if (!propertyRefId) {
+      router.replace("/login");
+      return;
+    }
+
     let active = true;
 
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!active) {
-        return;
-      }
-
-      if (!user) {
-        router.replace("/login");
-        setIsCheckingAccess(false);
-        return;
-      }
-
+    const loadTenantData = async () => {
       try {
-        const profileRef = doc(db, "users", user.uid);
-        const profileSnap = await getDoc(profileRef);
-
-        if (!profileSnap.exists()) {
-          router.replace("/login");
-          return;
-        }
-
-        const profile = profileSnap.data() as TenantProfile;
-        if (profile.role !== "tenant") {
-          router.replace("/login");
-          return;
-        }
-
-        const propertyRef = profile.property_id;
-        if (!propertyRef?.id) {
-          router.replace("/login");
-          return;
-        }
-
-        const propertyRefPath = doc(db, "properties", propertyRef.id);
+        const propertyRefPath = doc(db, "properties", propertyRefId);
 
         const [propertySnap, ledgerSnap, tenantSnap] = await Promise.all([
           getDoc(propertyRefPath),
@@ -190,33 +176,33 @@ export function useTenantDashboardData() {
             return firstName.localeCompare(secondName);
           });
 
-        setPropertyId(propertyRef.id);
-        setTenantUid(user.uid);
+        if (!active) {
+          return;
+        }
+
+        setPropertyId(propertyRefId);
+        setTenantUid(currentUserUid);
         setPropertyDetails(property);
         setLedgers(allLedgers);
         setPendingLedger(pending);
         setTenants(tenantList);
         setOwnerProfile(
-          ownerSnap?.exists() ? (ownerSnap.data() as OwnerProfile) : null,
+          ownerSnap?.exists()
+            ? (ownerSnap.data() as OwnerProfile)
+            : null,
         );
-        setTenantName(
-          profile.full_name || profile.name || user.displayName || "Tenant",
-        );
-        setIsAllowed(true);
+        setTenantName(profile?.full_name || profile?.name || "Tenant");
       } catch {
         router.replace("/login");
-      } finally {
-        if (active) {
-          setIsCheckingAccess(false);
-        }
       }
-    });
+    };
+
+    void loadTenantData();
 
     return () => {
       active = false;
-      unsubscribe();
     };
-  }, [router]);
+  }, [currentProfile, currentUserUid, isAllowed, isCheckingAccess, router]);
 
   const formatINR = useMemo(
     () =>
