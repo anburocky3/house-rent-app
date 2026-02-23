@@ -5,10 +5,12 @@ import { useEffect, useRef, useState } from "react";
 
 type BeforeHandoverSliderProps = {
   propertyId?: string;
+  imageUrls?: string[];
 };
 
 export default function BeforeHandoverSlider({
   propertyId,
+  imageUrls,
 }: BeforeHandoverSliderProps) {
   const [activeSlide, setActiveSlide] = useState(0);
   const sliderRef = useRef<HTMLDivElement | null>(null);
@@ -16,13 +18,22 @@ export default function BeforeHandoverSlider({
   const slideNumberRef = useRef<HTMLSpanElement | null>(null);
 
   const safePropertyId = propertyId?.trim() || "UNKNOWN_PROPERTY";
-  const beforeHandoverImages = Array.from({ length: 8 }, (_, index) => {
+  const fallbackImages = Array.from({ length: 8 }, (_, index) => {
     const imageNumber = index + 1;
     return {
       src: `/${safePropertyId}/${imageNumber}.jpeg`,
       alt: `House condition before key handover - photo ${imageNumber}`,
     };
   });
+  const customImages = (imageUrls || [])
+    .map((url) => url.trim())
+    .filter(Boolean)
+    .map((url, index) => ({
+      src: url,
+      alt: `House condition before key handover - photo ${index + 1}`,
+    }));
+  const beforeHandoverImages =
+    customImages.length > 0 ? customImages : fallbackImages;
 
   const moveToSlide = (index: number) => {
     const container = sliderRef.current;

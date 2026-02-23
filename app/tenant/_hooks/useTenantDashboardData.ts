@@ -47,6 +47,12 @@ export type TenantProfile = {
 };
 
 export type PropertyDetails = {
+  property_nickname?: string;
+  contact_person?: {
+    name?: string;
+    phone?: string;
+  };
+  before_handover_images?: string[];
   terms_and_conditions?:
     | string
     | Array<{

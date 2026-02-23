@@ -35,6 +35,21 @@ const usersSchema = {
 
 const propertiesSchema = {
   property_id: "avadi_house_01",
+  property_nickname: "Ramalingapuram House",
+  contact_person: {
+    name: "Owner",
+    phone: "9876543210",
+  },
+  before_handover_images: [
+    "/AVD_RMLP/1.jpeg",
+    "/AVD_RMLP/2.jpeg",
+    "/AVD_RMLP/3.jpeg",
+    "/AVD_RMLP/4.jpeg",
+    "/AVD_RMLP/5.jpeg",
+    "/AVD_RMLP/6.jpeg",
+    "/AVD_RMLP/7.jpeg",
+    "/AVD_RMLP/8.jpeg",
+  ],
   owner_uid: db.doc("users/OWNER_UID"),
   property_occupied_from: new Date("2026-02-03T00:00:00+05:30"),
   advance_paid: 15000,

@@ -74,6 +74,12 @@ type PropertySummary = {
   id: string;
   owner_uid?: RefLike;
   property_id?: string;
+  property_nickname?: string;
+  contact_person?: {
+    name?: string;
+    phone?: string;
+  };
+  before_handover_images?: string[];
   property_occupied_from?: { toDate?: () => Date } | Date;
   advance_paid?: number;
   ward_no?: string;
@@ -81,9 +87,27 @@ type PropertySummary = {
   rent_amount?: number;
   water_charge?: number;
   electricity_rate?: number;
-  terms_and_conditions?: string;
-  schedule_of_property?: string;
-  fitting_and_fixtures?: string;
+  terms_and_conditions?:
+    | string
+    | Array<{
+        id?: number;
+        title?: string;
+        description?: string;
+      }>;
+  schedule_of_property?:
+    | string
+    | Array<{
+        id?: number;
+        title?: string;
+        description?: string;
+      }>;
+  fitting_and_fixtures?:
+    | string
+    | Array<{
+        id?: number;
+        title?: string;
+        description?: string;
+      }>;
   _deleted?: boolean;
 };
 
@@ -131,7 +155,9 @@ type UpdateSettingsInput = {
   phone_number: string;
   upi_id: string;
   permanent_address: string;
-  tenant_terms: string;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  pincode?: string;
 };
 
 type UpdatePropertyChargesInput = {
@@ -143,6 +169,10 @@ type UpdatePropertyChargesInput = {
 
 type CreatePropertyInput = {
   property_id: string;
+  property_nickname?: string;
+  contact_person_name?: string;
+  contact_person_phone?: string;
+  before_handover_images?: string[];
   property_occupied_from?: string;
   advance_paid: number;
   ward_no?: string;
@@ -157,6 +187,10 @@ type CreatePropertyInput = {
 
 type UpdatePropertyInput = {
   propertyId: string;
+  property_nickname?: string;
+  contact_person_name?: string;
+  contact_person_phone?: string;
+  before_handover_images?: string[];
   property_occupied_from?: string;
   advance_paid: number;
   ward_no?: string;
@@ -426,6 +460,14 @@ export function useAdminDashboardData() {
       doc(db, "properties", propertyId),
       {
         property_id: propertyId,
+        property_nickname: input.property_nickname?.trim() || "",
+        contact_person: {
+          name: input.contact_person_name?.trim() || "",
+          phone: input.contact_person_phone?.trim().replace(/\D/g, "") || "",
+        },
+        before_handover_images: (input.before_handover_images || [])
+          .map((url) => url.trim())
+          .filter(Boolean),
         owner_uid: doc(db, "users", uid),
         property_occupied_from: input.property_occupied_from
           ? new Date(`${input.property_occupied_from}T00:00:00`)
@@ -454,6 +496,14 @@ export function useAdminDashboardData() {
       doc(db, "properties", input.propertyId),
       {
         property_id: input.propertyId,
+        property_nickname: input.property_nickname?.trim() || "",
+        contact_person: {
+          name: input.contact_person_name?.trim() || "",
+          phone: input.contact_person_phone?.trim().replace(/\D/g, "") || "",
+        },
+        before_handover_images: (input.before_handover_images || [])
+          .map((url) => url.trim())
+          .filter(Boolean),
         property_occupied_from: input.property_occupied_from
           ? new Date(`${input.property_occupied_from}T00:00:00`)
           : null,
@@ -677,7 +727,11 @@ export function useAdminDashboardData() {
         phone_number: input.phone_number.trim().replace(/\D/g, ""),
         upi_id: input.upi_id.trim(),
         permanent_address: input.permanent_address.trim(),
-        tenant_terms: input.tenant_terms.trim(),
+        pincode: input.pincode?.trim().replace(/\D/g, "") || "",
+        emergency_contact: {
+          name: input.emergency_contact_name?.trim() || "",
+          phone: input.emergency_contact_phone?.trim().replace(/\D/g, "") || "",
+        },
         updated_at: serverTimestamp(),
       },
       { merge: true },

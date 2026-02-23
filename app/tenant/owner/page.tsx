@@ -76,6 +76,8 @@ export default function TenantOwnerPage() {
 
   const supportPhone =
     ownerProfile?.phone_number || ownerProfile?.emergency_contact?.phone;
+  const propertyContactPhone = propertyDetails?.contact_person?.phone;
+  const propertySupportPhone = propertyContactPhone || supportPhone;
   const termsItems = toDisplayItems(propertyDetails?.terms_and_conditions);
   const scheduleItems = toDisplayItems(propertyDetails?.schedule_of_property);
   const fittingsItems = toDisplayItems(propertyDetails?.fitting_and_fixtures);
@@ -129,28 +131,56 @@ export default function TenantOwnerPage() {
           </p>
         </section>
 
-        <BeforeHandoverSlider propertyId={propertyDetails?.property_id} />
+        <BeforeHandoverSlider
+          propertyId={propertyDetails?.property_id}
+          imageUrls={propertyDetails?.before_handover_images}
+        />
 
         <section className="rounded-2xl border border-zinc-300 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="text-lg font-bold">
-            {ownerProfile?.full_name || "Owner"}
-          </p>
+          <div className="flex items-center justify-between">
+            <span className="text-lg font-bold">
+              {ownerProfile?.full_name || "Owner"}
+            </span>
+            <span className="bg-zinc-800 px-2 py-0.5 rounded text-xs">
+              {propertyDetails?.property_id || "-"}
+            </span>
+          </div>
           <div className="mt-3 space-y-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            <div className="flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-950">
+            <div className="flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-950 font-light">
               <span aria-hidden="true">📞</span>
-              <a href={supportPhone ? toTelHref(supportPhone) : "#"}>
-                {supportPhone || "-"}
+              <a
+                href={
+                  propertySupportPhone ? toTelHref(propertySupportPhone) : "#"
+                }
+              >
+                {propertySupportPhone || "-"}
               </a>
-              {supportPhone ? (
+
+              <span className="font-light text-sm italic">
+                (
+                {propertyDetails?.contact_person?.name ||
+                  ownerProfile?.full_name ||
+                  "-"}
+                )
+              </span>
+              {propertySupportPhone ? (
                 <CopyValueButton
-                  value={supportPhone}
+                  value={propertySupportPhone}
                   label="owner support phone"
                 />
               ) : null}
             </div>
+            <div className="rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium dark:border-zinc-800 dark:bg-zinc-950">
+              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-zinc-600 dark:text-zinc-400">
+                Property nickname
+              </p>
+              <p className="mt-1 font-light">
+                {propertyDetails?.property_nickname || "-"}
+              </p>
+            </div>
             <div className="flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-950">
               <span aria-hidden="true">🏠</span>
-              <span className="truncate">
+              <span className="truncate font-light">
                 {ownerProfile?.permanent_address || "-"}
               </span>
               {ownerProfile?.permanent_address ? (
@@ -159,12 +189,6 @@ export default function TenantOwnerPage() {
                   label="owner address"
                 />
               ) : null}
-            </div>
-            <div className="rounded-xl border border-zinc-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] dark:border-zinc-800 dark:bg-zinc-950">
-              Property ID:{" "}
-              <span className="bg-zinc-800 px-2 py-0.5 rounded">
-                {propertyDetails?.property_id || "-"}
-              </span>
             </div>
           </div>
         </section>
@@ -183,7 +207,7 @@ export default function TenantOwnerPage() {
                       {item.title ? (
                         <span className="font-semibold">{item.title}:</span>
                       ) : null}{" "}
-                      <span>{item.description}</span>
+                      <span className="font-light">{item.description}</span>
                     </li>
                   ))}
                 </ol>
@@ -199,13 +223,13 @@ export default function TenantOwnerPage() {
                 <p className="text-xs font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400">
                   📍 Schedule of Property
                 </p>
-                <div className="mt-2 space-y-1 text-sm font-medium leading-relaxed">
+                <div className="mt-2 space-y-1 text-sm leading-relaxed">
                   {scheduleItems.map((item, index) => (
                     <p key={`${item.title}-${item.description}-${index}`}>
                       {item.title ? (
                         <span className="font-semibold">{item.title}:</span>
                       ) : null}{" "}
-                      <span>{item.description}</span>
+                      <span className="font-light">{item.description}</span>
                     </p>
                   ))}
                 </div>
@@ -223,7 +247,7 @@ export default function TenantOwnerPage() {
                       {item.title ? (
                         <span className="font-semibold">{item.title}:</span>
                       ) : null}{" "}
-                      <span>{item.description}</span>
+                      <span className="font-light">{item.description}</span>
                     </li>
                   ))}
                 </ul>
@@ -255,7 +279,7 @@ export default function TenantOwnerPage() {
                   onChange={(event) => setConfirmChecked(event.target.checked)}
                   className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-700"
                 />
-                <span>
+                <span className="font-light">
                   I have read and accept the above terms and conditions as a
                   digital agreement.
                 </span>

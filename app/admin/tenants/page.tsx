@@ -89,6 +89,7 @@ export default function AdminTenantsPage() {
     useState<TenantDocument[]>([]);
   const [saving, setSaving] = useState(false);
   const [deletingUid, setDeletingUid] = useState("");
+  const [isFormOpen, setIsFormOpen] = useState(true);
 
   const onPickProfilePicture = (event: ChangeEvent<HTMLInputElement>) => {
     setProfilePictureFile(event.target.files?.[0] || null);
@@ -195,151 +196,168 @@ export default function AdminTenantsPage() {
         </section>
 
         <section className="rounded-2xl border border-zinc-300 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <form className="space-y-3" onSubmit={onSubmit}>
+          <div className="mb-3 flex items-center justify-between gap-3">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-700 dark:text-zinc-300">
               {editingTenantUid ? "Edit tenant" : "Add tenant"}
             </p>
-            <input
-              value={fullName}
-              onChange={(event) => setFullName(event.target.value)}
-              placeholder="Full name"
-              className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
-            />
-            <input
-              value={phoneNumber}
-              onChange={(event) => setPhoneNumber(event.target.value)}
-              placeholder="Phone number"
-              className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
-            />
-            <select
-              value={propertyId}
-              onChange={(event) => setPropertyId(event.target.value)}
-              className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
+            <button
+              type="button"
+              onClick={() => setIsFormOpen((previous) => !previous)}
+              className="inline-flex min-h-9 items-center justify-center rounded-lg border border-zinc-300 bg-white px-3 text-xs font-semibold text-zinc-800 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              aria-expanded={isFormOpen}
+              aria-label={
+                isFormOpen ? "Collapse tenant form" : "Expand tenant form"
+              }
             >
-              <option value="">Select property</option>
-              {properties.map((property) => (
-                <option key={property.id} value={property.id}>
-                  {property.id}
-                </option>
-              ))}
-            </select>
-            <input
-              value={address}
-              onChange={(event) => setAddress(event.target.value)}
-              placeholder="Permanent address"
-              className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
-            />
-            <input
-              value={pincode}
-              onChange={(event) => setPincode(event.target.value)}
-              placeholder="Pincode"
-              className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
-            />
-            <select
-              value={gender}
-              onChange={(event) => setGender(event.target.value)}
-              className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
-            >
-              <option value="">Select gender</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="other">Other</option>
-            </select>
-            <input
-              type="date"
-              value={dob}
-              onChange={(event) => setDob(event.target.value)}
-              className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
-            />
-            <input
-              value={fatherName}
-              onChange={(event) => setFatherName(event.target.value)}
-              placeholder="Father name"
-              className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
-            />
-            <input
-              value={aadhaarNumber}
-              onChange={(event) => setAadhaarNumber(event.target.value)}
-              placeholder="Aadhaar number"
-              className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
-            />
-            <div className="space-y-2 rounded-xl border border-zinc-300 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-950">
-              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-zinc-600 dark:text-zinc-400">
-                Profile picture
-              </p>
+              {isFormOpen ? "Close" : "Open"}
+            </button>
+          </div>
+
+          {isFormOpen ? (
+            <form className="space-y-3" onSubmit={onSubmit}>
               <input
-                type="file"
-                accept="image/*"
-                onChange={onPickProfilePicture}
-                className="w-full text-xs font-medium text-zinc-700 file:mr-3 file:rounded-lg file:border-0 file:bg-zinc-900 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white dark:text-zinc-300 dark:file:bg-zinc-100 dark:file:text-zinc-900"
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
+                placeholder="Full name"
+                className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
               />
-              <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                {profilePictureFile?.name ||
-                  (existingProfilePhotoUrl
-                    ? "Existing profile picture saved"
-                    : "No profile picture")}
-              </p>
-            </div>
-            <div className="space-y-2 rounded-xl border border-zinc-300 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-950">
-              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-zinc-600 dark:text-zinc-400">
-                Aadhaar photo
-              </p>
               <input
-                type="file"
-                accept="image/*,.pdf"
-                onChange={onPickAadhaarCard}
-                className="w-full text-xs font-medium text-zinc-700 file:mr-3 file:rounded-lg file:border-0 file:bg-zinc-900 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white dark:text-zinc-300 dark:file:bg-zinc-100 dark:file:text-zinc-900"
+                value={phoneNumber}
+                onChange={(event) => setPhoneNumber(event.target.value)}
+                placeholder="Phone number"
+                className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
               />
-              <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                {aadhaarCardFile?.name ||
-                  (existingAadhaarPhotoUrl
-                    ? "Existing Aadhaar photo saved"
-                    : "No Aadhaar photo")}
-              </p>
-            </div>
-            <div className="space-y-2 rounded-xl border border-zinc-300 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-950">
-              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-zinc-600 dark:text-zinc-400">
-                Supporting documents
-              </p>
+              <select
+                value={propertyId}
+                onChange={(event) => setPropertyId(event.target.value)}
+                className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
+              >
+                <option value="">Select property</option>
+                {properties.map((property) => (
+                  <option key={property.id} value={property.id}>
+                    {property.id}
+                  </option>
+                ))}
+              </select>
               <input
-                type="file"
-                multiple
-                accept="image/*,.pdf,.doc,.docx"
-                onChange={onPickSupportingFiles}
-                className="w-full text-xs font-medium text-zinc-700 file:mr-3 file:rounded-lg file:border-0 file:bg-zinc-900 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white dark:text-zinc-300 dark:file:bg-zinc-100 dark:file:text-zinc-900"
+                value={address}
+                onChange={(event) => setAddress(event.target.value)}
+                placeholder="Permanent address"
+                className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
               />
-              <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                {supportingFiles.length > 0
-                  ? `${supportingFiles.length} file(s) selected`
-                  : `${existingSupportingDocuments.length} existing document(s)`}
-              </p>
-            </div>
-            <input
-              value={guardianName}
-              onChange={(event) => setGuardianName(event.target.value)}
-              placeholder="Guardian name"
-              className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
-            />
-            <input
-              value={guardianRelationship}
-              onChange={(event) => setGuardianRelationship(event.target.value)}
-              placeholder="Guardian relationship"
-              className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
-            />
-            <input
-              value={guardianPhone}
-              onChange={(event) => setGuardianPhone(event.target.value)}
-              placeholder="Guardian phone"
-              className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
-            />
-            <textarea
-              value={guardianAddress}
-              onChange={(event) => setGuardianAddress(event.target.value)}
-              placeholder="Guardian address"
-              rows={3}
-              className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
-            />
-            {/* <input
+              <input
+                value={pincode}
+                onChange={(event) => setPincode(event.target.value)}
+                placeholder="Pincode"
+                className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
+              />
+              <select
+                value={gender}
+                onChange={(event) => setGender(event.target.value)}
+                className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
+              >
+                <option value="">Select gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+              <input
+                type="date"
+                value={dob}
+                onChange={(event) => setDob(event.target.value)}
+                className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
+              />
+              <input
+                value={fatherName}
+                onChange={(event) => setFatherName(event.target.value)}
+                placeholder="Father name"
+                className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
+              />
+              <input
+                value={aadhaarNumber}
+                onChange={(event) => setAadhaarNumber(event.target.value)}
+                placeholder="Aadhaar number"
+                className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
+              />
+              <div className="space-y-2 rounded-xl border border-zinc-300 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-950">
+                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-zinc-600 dark:text-zinc-400">
+                  Profile picture
+                </p>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={onPickProfilePicture}
+                  className="w-full text-xs font-medium text-zinc-700 file:mr-3 file:rounded-lg file:border-0 file:bg-zinc-900 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white dark:text-zinc-300 dark:file:bg-zinc-100 dark:file:text-zinc-900"
+                />
+                <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                  {profilePictureFile?.name ||
+                    (existingProfilePhotoUrl
+                      ? "Existing profile picture saved"
+                      : "No profile picture")}
+                </p>
+              </div>
+              <div className="space-y-2 rounded-xl border border-zinc-300 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-950">
+                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-zinc-600 dark:text-zinc-400">
+                  Aadhaar photo
+                </p>
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={onPickAadhaarCard}
+                  className="w-full text-xs font-medium text-zinc-700 file:mr-3 file:rounded-lg file:border-0 file:bg-zinc-900 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white dark:text-zinc-300 dark:file:bg-zinc-100 dark:file:text-zinc-900"
+                />
+                <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                  {aadhaarCardFile?.name ||
+                    (existingAadhaarPhotoUrl
+                      ? "Existing Aadhaar photo saved"
+                      : "No Aadhaar photo")}
+                </p>
+              </div>
+              <div className="space-y-2 rounded-xl border border-zinc-300 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-950">
+                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-zinc-600 dark:text-zinc-400">
+                  Supporting documents
+                </p>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*,.pdf,.doc,.docx"
+                  onChange={onPickSupportingFiles}
+                  className="w-full text-xs font-medium text-zinc-700 file:mr-3 file:rounded-lg file:border-0 file:bg-zinc-900 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white dark:text-zinc-300 dark:file:bg-zinc-100 dark:file:text-zinc-900"
+                />
+                <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                  {supportingFiles.length > 0
+                    ? `${supportingFiles.length} file(s) selected`
+                    : `${existingSupportingDocuments.length} existing document(s)`}
+                </p>
+              </div>
+              <input
+                value={guardianName}
+                onChange={(event) => setGuardianName(event.target.value)}
+                placeholder="Guardian name"
+                className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
+              />
+              <input
+                value={guardianRelationship}
+                onChange={(event) =>
+                  setGuardianRelationship(event.target.value)
+                }
+                placeholder="Guardian relationship"
+                className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
+              />
+              <input
+                value={guardianPhone}
+                onChange={(event) => setGuardianPhone(event.target.value)}
+                placeholder="Guardian phone"
+                className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
+              />
+              <textarea
+                value={guardianAddress}
+                onChange={(event) => setGuardianAddress(event.target.value)}
+                placeholder="Guardian address"
+                rows={3}
+                className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
+              />
+              {/* <input
               value={emergencyContactName}
               onChange={(event) => setEmergencyContactName(event.target.value)}
               placeholder="Emergency contact name"
@@ -351,32 +369,33 @@ export default function AdminTenantsPage() {
               placeholder="Emergency contact phone"
               className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
             /> */}
-            <label className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              <input
-                type="checkbox"
-                checked={isPrimaryTenant}
-                onChange={(event) => setIsPrimaryTenant(event.target.checked)}
-              />
-              Is primary tenant
-            </label>
+              <label className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                <input
+                  type="checkbox"
+                  checked={isPrimaryTenant}
+                  onChange={(event) => setIsPrimaryTenant(event.target.checked)}
+                />
+                Is primary tenant
+              </label>
 
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="submit"
-                disabled={saving}
-                className="inline-flex min-h-11 items-center justify-center rounded-xl bg-zinc-950 px-4 text-sm font-bold text-zinc-50 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
-              >
-                {saving ? "Saving..." : editingTenantUid ? "Update" : "Add"}
-              </button>
-              <button
-                type="button"
-                onClick={resetForm}
-                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-zinc-300 bg-white px-4 text-sm font-bold text-zinc-900 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
-              >
-                Clear
-              </button>
-            </div>
-          </form>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="inline-flex min-h-11 items-center justify-center rounded-xl bg-zinc-950 px-4 text-sm font-bold text-zinc-50 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
+                >
+                  {saving ? "Saving..." : editingTenantUid ? "Update" : "Add"}
+                </button>
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="inline-flex min-h-11 items-center justify-center rounded-xl border border-zinc-300 bg-white px-4 text-sm font-bold text-zinc-900 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                >
+                  Clear
+                </button>
+              </div>
+            </form>
+          ) : null}
         </section>
 
         <section className="rounded-2xl border border-zinc-300 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
@@ -557,6 +576,7 @@ export default function AdminTenantsPage() {
                     <button
                       type="button"
                       onClick={() => {
+                        setIsFormOpen(true);
                         setEditingTenantUid(tenant.uid);
                         setFullName(tenant.full_name || tenant.name || "");
                         setPhoneNumber(tenant.phone_number || "");
