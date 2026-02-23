@@ -46,7 +46,7 @@ const seed = async () => {
       pincode: "600071",
     },
     {
-      uid: "tenant_demo_1",
+      uid: "avadi_house_01_TNT1",
       full_name: "Tenant One",
       role: "tenant",
       phone_number: "+91 9000000002",
@@ -68,7 +68,7 @@ const seed = async () => {
       },
     },
     {
-      uid: "tenant_demo_2",
+      uid: "avadi_house_01_TNT2",
       full_name: "Tenant Two",
       role: "tenant",
       phone_number: "+91 9000000003",
@@ -90,7 +90,7 @@ const seed = async () => {
       },
     },
     {
-      uid: "tenant_demo_3",
+      uid: "avadi_house_01_TNT3",
       full_name: "Tenant Three",
       role: "tenant",
       phone_number: "+91 9000000004",

@@ -609,9 +609,40 @@ export function useAdminDashboardData() {
       return;
     }
 
-    const tenantRef = input.uid
-      ? doc(db, "users", input.uid)
-      : doc(collection(db, "users"));
+    const getNextTenantDocId = async (propertyId: string) => {
+      const propertyRef = doc(db, "properties", propertyId);
+      const tenantDocs = await getDocs(
+        query(
+          collection(db, "users"),
+          where("role", "==", "tenant"),
+          where("property_id", "==", propertyRef),
+        ),
+      );
+
+      const escapedPropertyId = propertyId.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&",
+      );
+      const idPattern = new RegExp(`^${escapedPropertyId}_TNT(\\d+)$`);
+
+      let maxTenantNumber = 0;
+      tenantDocs.docs.forEach((tenantDoc) => {
+        const match = tenantDoc.id.match(idPattern);
+        if (!match) {
+          return;
+        }
+        const number = Number(match[1]);
+        if (!Number.isNaN(number) && number > maxTenantNumber) {
+          maxTenantNumber = number;
+        }
+      });
+
+      return `${propertyId}_TNT${maxTenantNumber + 1}`;
+    };
+
+    const tenantDocId =
+      input.uid || (await getNextTenantDocId(input.propertyId));
+    const tenantRef = doc(db, "users", tenantDocId);
 
     let profilePhotoUrl = input.existing_profile_photo_url?.trim() || "";
     let profilePhotoStoragePath =

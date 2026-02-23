@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { ChangeEvent, FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, SubmitEvent, useState } from "react";
 import AdminBottomNav from "../_components/AdminBottomNav";
 import {
   type TenantDocument,
@@ -139,7 +139,7 @@ export default function AdminTenantsPage() {
     setExistingSupportingDocuments([]);
   };
 
-  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!fullName.trim() || !phoneNumber.trim() || !propertyId) {
       return;
