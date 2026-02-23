@@ -47,6 +47,27 @@ export type TenantProfile = {
 };
 
 export type PropertyDetails = {
+  terms_and_conditions?:
+    | string
+    | Array<{
+        id?: number;
+        title?: string;
+        description?: string;
+      }>;
+  schedule_of_property?:
+    | string
+    | Array<{
+        id?: number;
+        title?: string;
+        description?: string;
+      }>;
+  fitting_and_fixtures?:
+    | string
+    | Array<{
+        id?: number;
+        title?: string;
+        description?: string;
+      }>;
   rent_amount?: number;
   water_charge?: number;
   electricity_rate?: number;
@@ -187,9 +208,7 @@ export function useTenantDashboardData() {
         setPendingLedger(pending);
         setTenants(tenantList);
         setOwnerProfile(
-          ownerSnap?.exists()
-            ? (ownerSnap.data() as OwnerProfile)
-            : null,
+          ownerSnap?.exists() ? (ownerSnap.data() as OwnerProfile) : null,
         );
         setTenantName(profile?.full_name || profile?.name || "Tenant");
       } catch {

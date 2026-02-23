@@ -9,6 +9,49 @@ import BeforeHandoverSlider from "../_components/BeforeHandoverSlider";
 import { useTenantDashboardData } from "../_hooks/useTenantDashboardData";
 import { db } from "../../../firebaseConfig";
 
+type ContentItem = {
+  id?: number;
+  title?: string;
+  description?: string;
+};
+
+type DisplayItem = {
+  title: string;
+  description: string;
+};
+
+const toDisplayItems = (value?: string | ContentItem[]) => {
+  if (!value) {
+    return [] as DisplayItem[];
+  }
+
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => {
+        return {
+          title: item.title?.trim() || "",
+          description: item.description?.trim() || "",
+        };
+      })
+      .filter((item) => item.title || item.description);
+  }
+
+  return value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const separatorIndex = line.indexOf(":");
+      if (separatorIndex === -1) {
+        return { title: "", description: line };
+      }
+
+      const title = line.slice(0, separatorIndex).trim();
+      const description = line.slice(separatorIndex + 1).trim();
+      return { title, description };
+    });
+};
+
 export default function TenantOwnerPage() {
   const {
     isAllowed,
@@ -33,6 +76,9 @@ export default function TenantOwnerPage() {
 
   const supportPhone =
     ownerProfile?.phone_number || ownerProfile?.emergency_contact?.phone;
+  const termsItems = toDisplayItems(propertyDetails?.terms_and_conditions);
+  const scheduleItems = toDisplayItems(propertyDetails?.schedule_of_property);
+  const fittingsItems = toDisplayItems(propertyDetails?.fitting_and_fixtures);
   const currentTenant = tenants.find((tenant) => tenant.uid === tenantUid);
   const hasAcceptedTerms =
     Boolean(currentTenant?.terms_acceptance?.accepted) ||
@@ -130,105 +176,59 @@ export default function TenantOwnerPage() {
 
           <div className="mt-3 space-y-3 text-sm text-zinc-800 dark:text-zinc-200">
             <div className="rounded-xl border border-zinc-300 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950/40">
-              <ol className="list-decimal space-y-2 pl-5 text-sm font-base leading-relaxed">
-                <li>
-                  <span className="font-semibold">Rent:</span> ₹7,000 per month,
-                  payable on or before 5th of every month.
-                </li>
-                <li>
-                  <span className="font-semibold">Water charges:</span> ₹200
-                  fixed per month along with rent.
-                </li>
-                <li>
-                  <span className="font-semibold">Electricity charges:</span> ₹6
-                  per unit as per sub-meter reading.
-                </li>
-                <li>
-                  <span className="font-semibold">Deposit:</span> ₹15,000
-                  security deposit, refundable at vacating without interest
-                  after arrears/ damages adjustment.
-                </li>
-                <li>
-                  <span className="font-semibold">Period:</span> 11 months from
-                  agreement date.
-                </li>
-                <li>
-                  <span className="font-semibold">Occupancy & use:</span>
-                  Residential only, maximum 3 bachelors, no subletting.
-                </li>
-                <li>
-                  <span className="font-semibold">Inspection & keys:</span>
-                  Landlord/authorized representative may inspect at reasonable
-                  times.
-                </li>
-                <li>
-                  <span className="font-semibold">
-                    Additions & alterations:
-                  </span>
-                  Not allowed without written landlord permission; no
-                  subletting.
-                </li>
-                <li>
-                  <span className="font-semibold">
-                    Cleanliness & maintenance:
-                  </span>
-                  Keep premises clean and tenantable; interior repainting
-                  required while vacating; restoration cost can be deducted from
-                  deposit.
-                </li>
-                <li>
-                  <span className="font-semibold">Default of rent:</span> If
-                  rent is unpaid for two consecutive months, landlord may evict
-                  without prior notice.
-                </li>
-                <li>
-                  <span className="font-semibold">Renewal & increase:</span> For
-                  renewal after 11 months, rent increases by 5% by mutual
-                  agreement.
-                </li>
-                <li>
-                  <span className="font-semibold">Arrears & damages:</span> Any
-                  arrears, breakages, or damages will be deducted from deposit.
-                </li>
-                <li>
-                  <span className="font-semibold">Interior painting:</span>{" "}
-                  Return premises in freshly painted condition or equivalent
-                  painting and labor charges will be deducted from deposit.
-                </li>
-                <li>
-                  <span className="font-semibold">Notice:</span> One month
-                  written advance notice required from either party for
-                  termination.
-                </li>
-              </ol>
+              {termsItems.length > 0 ? (
+                <ol className="list-decimal space-y-2 pl-5 text-sm font-base leading-relaxed">
+                  {termsItems.map((item, index) => (
+                    <li key={`${item.title}-${item.description}-${index}`}>
+                      {item.title ? (
+                        <span className="font-semibold">{item.title}:</span>
+                      ) : null}{" "}
+                      <span>{item.description}</span>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="text-sm font-medium leading-relaxed text-zinc-600 dark:text-zinc-300">
+                  Terms and conditions are not available yet.
+                </p>
+              )}
             </div>
 
-            <div className="rounded-xl border border-zinc-300 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950/40">
-              <p className="text-xs font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400">
-                📍 Schedule of Property
-              </p>
-              <p className="mt-2 text-sm font-medium leading-relaxed">
-                No. 32, Second Street, Ramalingapuram, Kamaraj Nagar, Avadi,
-                Chennai - 600071.
-              </p>
-            </div>
+            {scheduleItems.length > 0 && (
+              <div className="rounded-xl border border-zinc-300 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950/40">
+                <p className="text-xs font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400">
+                  📍 Schedule of Property
+                </p>
+                <div className="mt-2 space-y-1 text-sm font-medium leading-relaxed">
+                  {scheduleItems.map((item, index) => (
+                    <p key={`${item.title}-${item.description}-${index}`}>
+                      {item.title ? (
+                        <span className="font-semibold">{item.title}:</span>
+                      ) : null}{" "}
+                      <span>{item.description}</span>
+                    </p>
+                  ))}
+                </div>
+              </div>
+            )}
 
-            <div className="rounded-xl border border-zinc-300 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950/40">
-              <p className="text-xs font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400">
-                🛠️ Fittings & Fixtures
-              </p>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm font-medium leading-relaxed">
-                <li>LED Tubelight: 3 Nos.</li>
-                <li>LED Bulb: 5 Nos.</li>
-                <li>Night Light Bulb: 2 Nos.</li>
-                <li>Exhaust Fan: 1 No.</li>
-                <li>Calling Bell: 1 No.</li>
-                <li>
-                  Interior Painting (Walls, Window, Doors, Grills): Freshly
-                  Painted
-                </li>
-              </ul>
-            </div>
+            {fittingsItems.length > 0 && (
+              <div className="rounded-xl border border-zinc-300 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950/40">
+                <p className="text-xs font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400">
+                  🛠️ Fittings & Fixtures
+                </p>
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm font-medium leading-relaxed">
+                  {fittingsItems.map((item, index) => (
+                    <li key={`${item.title}-${item.description}-${index}`}>
+                      {item.title ? (
+                        <span className="font-semibold">{item.title}:</span>
+                      ) : null}{" "}
+                      <span>{item.description}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </section>
 

@@ -18,11 +18,41 @@ import { useRoleGuard } from "../../_hooks/useRoleGuard";
 
 type RefLike = { id?: string } | string;
 
+export type TenantDocument = {
+  name?: string;
+  url?: string;
+  storage_path?: string;
+  content_type?: string;
+  size_bytes?: number;
+};
+
 export type TenantSummary = {
   uid: string;
   full_name?: string;
   name?: string;
+  profile_photo_url?: string;
+  profile_photo_storage_path?: string;
   phone_number?: string;
+  gender?: string;
+  dob?: { toDate?: () => Date } | Date;
+  father_name?: string;
+  aadhaar_info?: {
+    number?: string;
+    last4?: string;
+    photo_url?: string;
+    photo_storage_path?: string;
+  };
+  guardian_info?: {
+    name?: string;
+    relationship?: string;
+    phone?: string;
+    address?: string;
+  };
+  emergency_contact?: {
+    name?: string;
+    phone?: string;
+  };
+  supporting_documents?: TenantDocument[];
   property_id?: RefLike;
   is_primary_tenant?: boolean;
   permanent_address?: string;
@@ -43,10 +73,18 @@ export type ComplaintSummary = {
 type PropertySummary = {
   id: string;
   owner_uid?: RefLike;
+  property_id?: string;
+  property_occupied_from?: { toDate?: () => Date } | Date;
+  advance_paid?: number;
+  ward_no?: string;
   street_name?: string;
   rent_amount?: number;
   water_charge?: number;
   electricity_rate?: number;
+  terms_and_conditions?: string;
+  schedule_of_property?: string;
+  fitting_and_fixtures?: string;
+  _deleted?: boolean;
 };
 
 export type BillingLedgerSummary = {
@@ -68,6 +106,24 @@ type UpdateTenantInput = {
   is_primary_tenant: boolean;
   permanent_address?: string;
   pincode?: string;
+  gender?: string;
+  dob?: string;
+  father_name?: string;
+  aadhaar_number?: string;
+  guardian_name?: string;
+  guardian_relationship?: string;
+  guardian_phone?: string;
+  guardian_address?: string;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  profile_picture_file?: File | null;
+  aadhaar_card_file?: File | null;
+  supporting_documents?: File[];
+  existing_profile_photo_url?: string;
+  existing_profile_photo_storage_path?: string;
+  existing_aadhaar_photo_url?: string;
+  existing_aadhaar_photo_storage_path?: string;
+  existing_supporting_documents?: TenantDocument[];
 };
 
 type UpdateSettingsInput = {
@@ -85,6 +141,34 @@ type UpdatePropertyChargesInput = {
   electricity_rate: number;
 };
 
+type CreatePropertyInput = {
+  property_id: string;
+  property_occupied_from?: string;
+  advance_paid: number;
+  ward_no?: string;
+  street_name: string;
+  rent_amount: number;
+  water_charge: number;
+  electricity_rate: number;
+  terms_and_conditions?: string;
+  schedule_of_property?: string;
+  fitting_and_fixtures?: string;
+};
+
+type UpdatePropertyInput = {
+  propertyId: string;
+  property_occupied_from?: string;
+  advance_paid: number;
+  ward_no?: string;
+  street_name: string;
+  rent_amount: number;
+  water_charge: number;
+  electricity_rate: number;
+  terms_and_conditions?: string;
+  schedule_of_property?: string;
+  fitting_and_fixtures?: string;
+};
+
 const getRefId = (value?: RefLike) => {
   if (!value) {
     return "";
@@ -94,6 +178,41 @@ const getRefId = (value?: RefLike) => {
     return segments[segments.length - 1] || "";
   }
   return value.id || "";
+};
+
+const sanitizeFileName = (name: string) =>
+  name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120);
+
+const uploadTenantFile = async (
+  propertyId: string,
+  tenantUid: string,
+  file: File,
+  category: "profile" | "aadhaar" | "supporting",
+) => {
+  const safeName = sanitizeFileName(file.name || "file");
+  const formData = new FormData();
+  formData.append("file", file, safeName);
+  formData.append("propertyId", propertyId);
+  formData.append("tenantUid", tenantUid);
+  formData.append("category", category);
+
+  const response = await fetch("/api/tenant-documents/upload", {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to upload tenant document");
+  }
+
+  const uploaded = (await response.json()) as TenantDocument;
+  return {
+    name: uploaded.name || file.name,
+    url: uploaded.url || "",
+    storage_path: uploaded.storage_path || "",
+    content_type: uploaded.content_type || file.type,
+    size_bytes: uploaded.size_bytes ?? file.size,
+  };
 };
 
 export function useAdminDashboardData() {
@@ -146,8 +265,10 @@ export function useAdminDashboardData() {
           id: propertyDoc.id,
           ...(propertyDoc.data() as Omit<PropertySummary, "id">),
         }))
-        .filter((property) =>
-          ownerUidCandidates.has(getRefId(property.owner_uid)),
+        .filter(
+          (property) =>
+            property._deleted !== true &&
+            ownerUidCandidates.has(getRefId(property.owner_uid)),
         );
 
       const ownedPropertyIds = new Set(ownerProperties.map((item) => item.id));
@@ -295,6 +416,77 @@ export function useAdminDashboardData() {
     await loadData();
   };
 
+  const createProperty = async (input: CreatePropertyInput) => {
+    if (!uid || !input.property_id.trim()) {
+      return;
+    }
+
+    const propertyId = input.property_id.trim();
+    await setDoc(
+      doc(db, "properties", propertyId),
+      {
+        property_id: propertyId,
+        owner_uid: doc(db, "users", uid),
+        property_occupied_from: input.property_occupied_from
+          ? new Date(`${input.property_occupied_from}T00:00:00`)
+          : null,
+        advance_paid: input.advance_paid,
+        ward_no: input.ward_no?.trim() || "",
+        street_name: input.street_name.trim(),
+        rent_amount: input.rent_amount,
+        water_charge: input.water_charge,
+        electricity_rate: input.electricity_rate,
+        terms_and_conditions: input.terms_and_conditions?.trim() || "",
+        schedule_of_property: input.schedule_of_property?.trim() || "",
+        fitting_and_fixtures: input.fitting_and_fixtures?.trim() || "",
+        _deleted: false,
+        created_at: serverTimestamp(),
+        updated_at: serverTimestamp(),
+      },
+      { merge: true },
+    );
+
+    await loadData();
+  };
+
+  const updateProperty = async (input: UpdatePropertyInput) => {
+    await setDoc(
+      doc(db, "properties", input.propertyId),
+      {
+        property_id: input.propertyId,
+        property_occupied_from: input.property_occupied_from
+          ? new Date(`${input.property_occupied_from}T00:00:00`)
+          : null,
+        advance_paid: input.advance_paid,
+        ward_no: input.ward_no?.trim() || "",
+        street_name: input.street_name.trim(),
+        rent_amount: input.rent_amount,
+        water_charge: input.water_charge,
+        electricity_rate: input.electricity_rate,
+        terms_and_conditions: input.terms_and_conditions?.trim() || "",
+        schedule_of_property: input.schedule_of_property?.trim() || "",
+        fitting_and_fixtures: input.fitting_and_fixtures?.trim() || "",
+        updated_at: serverTimestamp(),
+      },
+      { merge: true },
+    );
+
+    await loadData();
+  };
+
+  const deleteProperty = async (propertyId: string) => {
+    await setDoc(
+      doc(db, "properties", propertyId),
+      {
+        _deleted: true,
+        updated_at: serverTimestamp(),
+      },
+      { merge: true },
+    );
+
+    await loadData();
+  };
+
   const updatePropertyCurrentUnits = async (
     propertyId: string,
     nextCurrentUnit: number,
@@ -346,22 +538,103 @@ export function useAdminDashboardData() {
       return;
     }
 
+    const tenantRef = input.uid
+      ? doc(db, "users", input.uid)
+      : doc(collection(db, "users"));
+
+    let profilePhotoUrl = input.existing_profile_photo_url?.trim() || "";
+    let profilePhotoStoragePath =
+      input.existing_profile_photo_storage_path?.trim() || "";
+
+    if (input.profile_picture_file) {
+      const uploadedProfile = await uploadTenantFile(
+        input.propertyId,
+        tenantRef.id,
+        input.profile_picture_file,
+        "profile",
+      );
+      profilePhotoUrl = uploadedProfile.url || "";
+      profilePhotoStoragePath = uploadedProfile.storage_path || "";
+    }
+
+    let aadhaarPhotoUrl = input.existing_aadhaar_photo_url?.trim() || "";
+    let aadhaarPhotoStoragePath =
+      input.existing_aadhaar_photo_storage_path?.trim() || "";
+
+    if (input.aadhaar_card_file) {
+      const uploadedAadhaar = await uploadTenantFile(
+        input.propertyId,
+        tenantRef.id,
+        input.aadhaar_card_file,
+        "aadhaar",
+      );
+      aadhaarPhotoUrl = uploadedAadhaar.url || "";
+      aadhaarPhotoStoragePath = uploadedAadhaar.storage_path || "";
+    }
+
+    const existingDocuments = input.existing_supporting_documents || [];
+    const uploadedSupportingDocuments = await Promise.all(
+      (input.supporting_documents || []).map((file) =>
+        uploadTenantFile(input.propertyId, tenantRef.id, file, "supporting"),
+      ),
+    );
+
+    const mergedSupportingDocsByName = new Map<string, TenantDocument>();
+    for (const existingDocument of existingDocuments) {
+      const key = sanitizeFileName(existingDocument.name || "").toLowerCase();
+      if (!key) {
+        continue;
+      }
+      mergedSupportingDocsByName.set(key, existingDocument);
+    }
+    for (const uploadedDocument of uploadedSupportingDocuments) {
+      const key = sanitizeFileName(uploadedDocument.name || "").toLowerCase();
+      if (!key) {
+        continue;
+      }
+      mergedSupportingDocsByName.set(key, uploadedDocument);
+    }
+
     const payload = {
       full_name: input.full_name.trim(),
+      profile_photo_url: profilePhotoUrl,
+      profile_photo_storage_path: profilePhotoStoragePath,
       phone_number: input.phone_number.trim().replace(/\D/g, ""),
       role: "tenant",
       property_id: doc(db, "properties", input.propertyId),
       is_primary_tenant: input.is_primary_tenant,
       permanent_address: input.permanent_address?.trim() || "",
       pincode: input.pincode?.trim() || "",
+      gender: input.gender?.trim() || "",
+      dob: input.dob ? new Date(`${input.dob}T00:00:00`) : null,
+      father_name: input.father_name?.trim() || "",
+      aadhaar_info: {
+        number: input.aadhaar_number?.trim().replace(/\D/g, "") || "",
+        last4: (input.aadhaar_number?.trim().replace(/\D/g, "") || "").slice(
+          -4,
+        ),
+        photo_url: aadhaarPhotoUrl,
+        photo_storage_path: aadhaarPhotoStoragePath,
+      },
+      guardian_info: {
+        name: input.guardian_name?.trim() || "",
+        relationship: input.guardian_relationship?.trim() || "",
+        phone: input.guardian_phone?.trim().replace(/\D/g, "") || "",
+        address: input.guardian_address?.trim() || "",
+      },
+      emergency_contact: {
+        name: input.emergency_contact_name?.trim() || "",
+        phone: input.emergency_contact_phone?.trim().replace(/\D/g, "") || "",
+      },
+      supporting_documents: Array.from(mergedSupportingDocsByName.values()),
       _deleted: false,
       updated_at: serverTimestamp(),
     };
 
     if (input.uid) {
-      await setDoc(doc(db, "users", input.uid), payload, { merge: true });
+      await setDoc(tenantRef, payload, { merge: true });
     } else {
-      await addDoc(collection(db, "users"), {
+      await setDoc(tenantRef, {
         ...payload,
         created_at: serverTimestamp(),
       });
@@ -436,6 +709,9 @@ export function useAdminDashboardData() {
     latestLedgerByProperty,
     openComplaintsCount,
     updateElectricityUnits,
+    createProperty,
+    updateProperty,
+    deleteProperty,
     updatePropertyCharges,
     updatePropertyCurrentUnits,
     saveTenant,
