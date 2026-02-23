@@ -1,6 +1,7 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getMessaging, isSupported } from "firebase/messaging";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -16,5 +17,24 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+let messagingInstance;
+
+export const getClientMessaging = async () => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const supported = await isSupported().catch(() => false);
+  if (!supported) {
+    return null;
+  }
+
+  if (!messagingInstance) {
+    messagingInstance = getMessaging(app);
+  }
+
+  return messagingInstance;
+};
 
 export default app;
