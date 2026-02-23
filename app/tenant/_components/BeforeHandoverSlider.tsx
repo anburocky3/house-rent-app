@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type BeforeHandoverSliderProps = {
   propertyId?: string;
@@ -12,6 +12,8 @@ export default function BeforeHandoverSlider({
 }: BeforeHandoverSliderProps) {
   const [activeSlide, setActiveSlide] = useState(0);
   const sliderRef = useRef<HTMLDivElement | null>(null);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const slideNumberRef = useRef<HTMLSpanElement | null>(null);
 
   const safePropertyId = propertyId?.trim() || "UNKNOWN_PROPERTY";
   const beforeHandoverImages = Array.from({ length: 8 }, (_, index) => {
@@ -44,10 +46,52 @@ export default function BeforeHandoverSlider({
     if (!container || container.clientWidth === 0) {
       return;
     }
-    const nextIndex = Math.round(container.scrollLeft / container.clientWidth);
-    if (nextIndex !== activeSlide) {
-      setActiveSlide(nextIndex);
+
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
     }
+
+    scrollTimeoutRef.current = setTimeout(() => {
+      const nextIndex = Math.round(
+        container.scrollLeft / container.clientWidth,
+      );
+      setActiveSlide((currentSlide) =>
+        currentSlide === nextIndex ? currentSlide : nextIndex,
+      );
+    }, 90);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    slideNumberRef.current?.animate(
+      [
+        { opacity: 0, transform: "translateY(3px)" },
+        { opacity: 1, transform: "translateY(0px)" },
+      ],
+      {
+        duration: 180,
+        easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+      },
+    );
+  }, [activeSlide]);
+
+  const onSliderScrollEnd = () => {
+    const container = sliderRef.current;
+    if (!container || container.clientWidth === 0) {
+      return;
+    }
+
+    const nextIndex = Math.round(container.scrollLeft / container.clientWidth);
+    setActiveSlide((currentSlide) =>
+      currentSlide === nextIndex ? currentSlide : nextIndex,
+    );
   };
 
   return (
@@ -57,13 +101,20 @@ export default function BeforeHandoverSlider({
           Before handover photos
         </p>
         <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
-          {activeSlide + 1}/{beforeHandoverImages.length}
+          <span
+            ref={slideNumberRef}
+            className="inline-flex min-w-[2ch] justify-end tabular-nums"
+          >
+            {activeSlide + 1}
+          </span>
+          /{beforeHandoverImages.length}
         </span>
       </div>
 
       <div
         ref={sliderRef}
         onScroll={onSliderScroll}
+        onScrollEnd={onSliderScrollEnd}
         className="mt-3 flex snap-x snap-mandatory overflow-x-auto scroll-smooth rounded-2xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {beforeHandoverImages.map((image, index) => (

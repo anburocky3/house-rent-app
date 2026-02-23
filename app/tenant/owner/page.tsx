@@ -115,7 +115,10 @@ export default function TenantOwnerPage() {
               ) : null}
             </div>
             <div className="rounded-xl border border-zinc-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] dark:border-zinc-800 dark:bg-zinc-950">
-              Property ID: {propertyDetails?.property_id || "-"}
+              Property ID:{" "}
+              <span className="bg-zinc-800 px-2 py-0.5 rounded">
+                {propertyDetails?.property_id || "-"}
+              </span>
             </div>
           </div>
         </section>
@@ -321,9 +324,7 @@ export default function TenantOwnerPage() {
 
                       <div className="flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
                         <span aria-hidden="true">🏠</span>
-                        <span className="truncate">
-                          {guardianAddress || "-"}
-                        </span>
+                        <span className="">{guardianAddress || "-"}</span>
                         {guardianAddress ? (
                           <CopyValueButton
                             value={guardianAddress}
