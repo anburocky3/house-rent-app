@@ -6,7 +6,7 @@ export default function AdminLoginPage() {
       role="admin"
       title="Admin sign in"
       subtitle="Enter your phone number and password to continue."
-      allowCreate={true}
+      allowCreate={false}
     />
   );
 }

@@ -543,13 +543,31 @@ export function useAdminDashboardData() {
   ) => {
     const property = properties.find((item) => item.id === propertyId);
     const unitRate = property?.electricity_rate ?? 0;
-    const latestLedger = latestLedgerByProperty[propertyId];
+    const propertyRef = doc(db, "properties", propertyId);
+    const pendingLedgerDocs = await getDocs(
+      query(
+        collection(db, "billing_ledger"),
+        where("property_id", "==", propertyRef),
+        where("payment_status", "==", "pending"),
+      ),
+    );
 
-    if (latestLedger?.id) {
-      const prev = latestLedger.prev_meter_reading ?? 0;
+    const latestPendingLedger = pendingLedgerDocs.docs
+      .map((ledgerDoc) => ({
+        id: ledgerDoc.id,
+        ...(ledgerDoc.data() as Omit<BillingLedgerSummary, "id">),
+      }))
+      .sort((first, second) => {
+        const firstTime = first.updated_at?.toDate?.()?.getTime() || 0;
+        const secondTime = second.updated_at?.toDate?.()?.getTime() || 0;
+        return secondTime - firstTime;
+      })[0];
+
+    if (latestPendingLedger?.id) {
+      const prev = latestPendingLedger.prev_meter_reading ?? 0;
       const consumedUnits = Math.max(nextCurrentUnit - prev, 0);
 
-      await updateDoc(doc(db, "billing_ledger", latestLedger.id), {
+      await updateDoc(doc(db, "billing_ledger", latestPendingLedger.id), {
         current_meter_reading: nextCurrentUnit,
         electricity_total: consumedUnits * unitRate,
         updated_at: serverTimestamp(),
@@ -563,13 +581,16 @@ export function useAdminDashboardData() {
       month: "long",
       year: "numeric",
     });
+    const latestLedger = latestLedgerByProperty[propertyId];
+    const prevReading = latestLedger?.current_meter_reading ?? 0;
+    const consumedUnits = Math.max(nextCurrentUnit - prevReading, 0);
 
     await addDoc(collection(db, "billing_ledger"), {
-      property_id: doc(db, "properties", propertyId),
+      property_id: propertyRef,
       month_year: monthYear,
-      prev_meter_reading: 0,
+      prev_meter_reading: prevReading,
       current_meter_reading: nextCurrentUnit,
-      electricity_total: nextCurrentUnit * unitRate,
+      electricity_total: consumedUnits * unitRate,
       payment_status: "pending",
       paid_at: null,
       created_at: serverTimestamp(),

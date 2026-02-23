@@ -3,7 +3,16 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  serverTimestamp,
+  setDoc,
+  where,
+} from "firebase/firestore";
 import { auth, db } from "../../firebaseConfig";
 
 type GuardRole = "admin" | "tenant";
@@ -44,12 +53,70 @@ export function useRoleGuard({ role, redirectTo }: UseRoleGuardArgs) {
       }
 
       try {
-        const userSnapshot = await getDoc(doc(db, "users", currentUser.uid));
-        const userData = userSnapshot.exists()
-          ? (userSnapshot.data() as GuardProfile)
-          : null;
+        let matchedDocId = "";
+        let userData: GuardProfile | null = null;
+
+        const directSnapshot = await getDoc(doc(db, "users", currentUser.uid));
+        if (directSnapshot.exists()) {
+          matchedDocId = currentUser.uid;
+          userData = directSnapshot.data() as GuardProfile;
+        }
+
+        if (!userData) {
+          const authUidMatches = await getDocs(
+            query(
+              collection(db, "users"),
+              where("auth_uid", "==", currentUser.uid),
+            ),
+          );
+
+          const activeMatch = authUidMatches.docs.find((item) => {
+            const profile = item.data() as GuardProfile;
+            return profile._deleted !== true;
+          });
+
+          if (activeMatch) {
+            matchedDocId = activeMatch.id;
+            userData = activeMatch.data() as GuardProfile;
+          }
+        }
+
+        if (!userData) {
+          const emailPrefix = (currentUser.email || "").split("@")[0] || "";
+          const normalizedPhone = emailPrefix.replace(/\D/g, "");
+
+          if (normalizedPhone) {
+            const phoneMatches = await getDocs(
+              query(
+                collection(db, "users"),
+                where("role", "==", role),
+                where("phone_number", "==", normalizedPhone),
+              ),
+            );
+
+            const activePhoneMatch = phoneMatches.docs.find((item) => {
+              const profile = item.data() as GuardProfile;
+              return profile._deleted !== true;
+            });
+
+            if (activePhoneMatch) {
+              matchedDocId = activePhoneMatch.id;
+              userData = activePhoneMatch.data() as GuardProfile;
+
+              await setDoc(
+                doc(db, "users", matchedDocId),
+                {
+                  auth_uid: currentUser.uid,
+                  updated_at: serverTimestamp(),
+                },
+                { merge: true },
+              );
+            }
+          }
+        }
+
         const hasAccess =
-          userData?.role === role && userData?._deleted !== true;
+          userData?.role === role && userData?._deleted !== true && Boolean(matchedDocId);
 
         if (!hasAccess) {
           setUid("");
@@ -59,7 +126,7 @@ export function useRoleGuard({ role, redirectTo }: UseRoleGuardArgs) {
           return;
         }
 
-        setUid(currentUser.uid);
+        setUid(matchedDocId);
         setProfile(userData);
         setIsAllowed(true);
       } catch {

@@ -175,7 +175,13 @@ export function useTenantDashboardData() {
           (item) => item.data() as BillingLedger,
         );
         const pending =
-          allLedgers.find((item) => item.payment_status === "pending") || null;
+          allLedgers
+            .filter((item) => item.payment_status === "pending")
+            .sort((first, second) => {
+              const firstTime = first.updated_at?.toDate?.()?.getTime() || 0;
+              const secondTime = second.updated_at?.toDate?.()?.getTime() || 0;
+              return secondTime - firstTime;
+            })[0] || null;
 
         const tenantList = tenantSnap.docs
           .map((tenantDoc) => ({

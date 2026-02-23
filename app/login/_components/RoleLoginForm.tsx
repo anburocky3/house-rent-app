@@ -12,7 +12,6 @@ import {
 import {
   collection,
   doc,
-  getDoc,
   getDocs,
   query,
   serverTimestamp,
@@ -54,68 +53,9 @@ export default function RoleLoginForm({
     password: z.string().min(6, "Password must be at least 6 characters."),
   });
 
-  const saveUserProfile = async (
-    uid: string,
-    selectedRole: Role,
-    phone: string,
-  ) => {
+  const findProfileByPhone = async (selectedRole: Role, phone: string) => {
     const normalizedPhone = phone.replace(/\D/g, "");
-    const userRef = doc(db, "users", uid);
-    const snapshot = await getDoc(userRef);
-    let existing = snapshot.exists() ? (snapshot.data() as UserProfile) : null;
 
-    // If no doc with this uid, check if one exists with this phone number
-    if (!existing) {
-      const phoneMatches = await getDocs(
-        query(
-          collection(db, "users"),
-          where("phone_number", "==", normalizedPhone),
-        ),
-      );
-
-      if (!phoneMatches.empty) {
-        // Prefer an exact uid hit, otherwise migrate from first phone match
-        const oldDoc =
-          phoneMatches.docs.find((matchedDoc) => matchedDoc.id === uid) ||
-          phoneMatches.docs[0];
-        existing = oldDoc.data() as UserProfile;
-
-        // Mark old document as soft-deleted without wiping existing fields
-        if (oldDoc.id !== uid) {
-          await setDoc(
-            doc(db, "users", oldDoc.id),
-            {
-              _deleted: true,
-              updated_at: serverTimestamp(),
-            },
-            { merge: true },
-          );
-        }
-      }
-    }
-
-    const resolvedRole: Role =
-      existing?.role === "admin" || existing?.role === "tenant"
-        ? existing.role
-        : selectedRole;
-
-    const profileUpdate: UserProfile = {
-      ...(existing ?? {}),
-      uid,
-      phone_number: normalizedPhone,
-      role: resolvedRole,
-      updated_at: serverTimestamp(),
-      ...(existing ? {} : { created_at: serverTimestamp() }),
-      _deleted: false,
-    };
-
-    await setDoc(userRef, profileUpdate, { merge: true });
-
-    return resolvedRole;
-  };
-
-  const ensureProfileExists = async (selectedRole: Role, phone: string) => {
-    const normalizedPhone = phone.replace(/\D/g, "");
     const constraints = [
       where("role", "==", selectedRole),
       where("phone_number", "==", normalizedPhone),
@@ -129,13 +69,63 @@ export default function RoleLoginForm({
       query(collection(db, "users"), ...constraints),
     );
 
-    if (matches.empty) {
+    const activeDoc = matches.docs.find((item) => {
+      const data = item.data() as UserProfile;
+      return data._deleted !== true;
+    });
+
+    if (!activeDoc) {
+      return null;
+    }
+
+    return {
+      id: activeDoc.id,
+      profile: activeDoc.data() as UserProfile,
+      normalizedPhone,
+    };
+  };
+
+  const syncExistingProfileWithAuth = async (
+    profileDocId: string,
+    authUid: string,
+    selectedRole: Role,
+    phone: string,
+    existing: UserProfile,
+  ) => {
+    const normalizedPhone = phone.replace(/\D/g, "");
+
+    const resolvedRole: Role =
+      existing?.role === "admin" || existing?.role === "tenant"
+        ? existing.role
+        : selectedRole;
+
+    const profileUpdate: UserProfile = {
+      ...(existing ?? {}),
+      uid: profileDocId,
+      auth_uid: authUid,
+      phone_number: normalizedPhone,
+      role: resolvedRole,
+      updated_at: serverTimestamp(),
+      _deleted: false,
+    };
+
+    await setDoc(doc(db, "users", profileDocId), profileUpdate, { merge: true });
+
+    return resolvedRole;
+  };
+
+  const ensureProfileExists = async (selectedRole: Role, phone: string) => {
+    const existing = await findProfileByPhone(selectedRole, phone);
+
+    if (!existing) {
       throw new Error(
         selectedRole === "admin"
           ? "Owner account not found. Please contact support."
           : "Primary tenant account not found. Please contact your landlord.",
       );
     }
+
+    return existing;
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -169,7 +159,7 @@ export default function RoleLoginForm({
         ? `${normalizedPhone}@tenant.house-rent.local`
         : "";
 
-      await ensureProfileExists(role, phoneNumber);
+      const existingProfile = await ensureProfileExists(role, phoneNumber);
 
       try {
         userCredential = await signInWithEmailAndPassword(
@@ -198,7 +188,13 @@ export default function RoleLoginForm({
       }
 
       const { user } = userCredential;
-      const resolvedRole = await saveUserProfile(user.uid, role, phoneNumber);
+      const resolvedRole = await syncExistingProfileWithAuth(
+        existingProfile.id,
+        user.uid,
+        role,
+        phoneNumber,
+        existingProfile.profile,
+      );
 
       router.replace(resolvedRole === "admin" ? "/admin" : "/tenant");
     } catch (err) {
