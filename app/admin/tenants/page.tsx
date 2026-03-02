@@ -427,16 +427,46 @@ export default function AdminTenantsPage() {
                     ) : null}
                     <div className="flex w-full items-start justify-between gap-2">
                       <div className="text-base font-bold text-zinc-950 dark:text-zinc-50">
-                        <div>
-                          {tenant.full_name || tenant.name || "Tenant"}{" "}
-                          <span className="text-gray-500 text-sm">
-                            {tenant.dob &&
-                              calculateAge(
-                                tenant.dob instanceof Date
-                                  ? tenant.dob
-                                  : tenant.dob.toDate?.() || new Date(),
-                              )}
-                          </span>
+                        <div className="">
+                          <div className="flex items-center space-x-1">
+                            {tenant.full_name || tenant.name || "Tenant"}{" "}
+                            <span className="text-gray-500 text-sm ml-1">
+                              {tenant.dob &&
+                                calculateAge(
+                                  tenant.dob instanceof Date
+                                    ? tenant.dob
+                                    : tenant.dob.toDate?.() || new Date(),
+                                )}
+                            </span>
+                            {tenant.is_primary_tenant && (
+                              <span
+                                title={`Primary tenant of property ${getRefId(tenant.property_id) || "-"}`}
+                                className="ml-1 text-green-500"
+                              >
+                                ●
+                              </span>
+                            )}
+                            {/* Show notification icon if they that user has FCm Token */}
+                            {tenant.fcmToken && (
+                              <span
+                                title="Enabled notifications"
+                                className="ml-1 text-blue-500"
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="32"
+                                  height="32"
+                                  viewBox="0 0 24 24"
+                                  className="w-4"
+                                >
+                                  <path
+                                    fill="currentColor"
+                                    d="M4 19v-2h2v-7q0-2.075 1.25-3.687T10.5 4.2v-.7q0-.625.438-1.062T12 2t1.063.438T13.5 3.5v.7q2 .5 3.25 2.113T18 10v7h2v2zm8 3q-.825 0-1.412-.587T10 20h4q0 .825-.587 1.413T12 22m-4-5h8v-7q0-1.65-1.175-2.825T12 6T9.175 7.175T8 10z"
+                                  />
+                                </svg>
+                              </span>
+                            )}
+                          </div>
                           <div className="text-xs  text-gray-600 font-medium space-x-1">
                             <span className="font-semibold">
                               {tenant.gender === "male"

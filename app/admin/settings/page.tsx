@@ -194,17 +194,19 @@ export default function AdminSettingsPage() {
 
           <div className="mt-3 rounded-xl border border-zinc-300 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-950/40">
             <p className="text-xs font-semibold uppercase tracking-[0.08em] text-zinc-600 dark:text-zinc-400">
-              Properties
+              Send notifications
             </p>
-            <p className="mt-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              Create, edit, update, and delete property records from the
-              dedicated properties page.
+            <p className="mt-1 text-xs text-zinc-700 dark:text-zinc-300">
+              Send important updates and reminders to tenants via push
+              notifications. Ensure tenants have enabled notifications in their
+              settings to receive timely alerts.
             </p>
+
             <Link
-              href="/admin/properties"
+              href="/admin/notifications"
               className="mt-3 inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-zinc-300 bg-white px-3 text-sm font-bold text-zinc-900 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
             >
-              Open properties page
+              Send notifications
             </Link>
           </div>
 

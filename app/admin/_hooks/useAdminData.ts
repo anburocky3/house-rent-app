@@ -36,6 +36,7 @@ export type TenantSummary = {
   gender?: string;
   dob?: { toDate?: () => Date } | Date;
   father_name?: string;
+  fcmToken?: string;
   aadhaar_info?: {
     number?: string;
     last4?: string;
