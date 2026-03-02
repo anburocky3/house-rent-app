@@ -21,5 +21,32 @@ export default function manifest(): MetadataRoute.Manifest {
         type: "image/svg+xml",
       },
     ],
+    // add quick shortcuts for admin access
+    shortcuts: [
+      {
+        name: "Owner Login",
+        short_name: "Owner",
+        url: "/login/super",
+        icons: [
+          {
+            src: "/icons/icon-192.svg",
+            sizes: "192x192",
+            type: "image/svg+xml",
+          },
+        ],
+      },
+      {
+        name: "Tenant Login",
+        short_name: "Tenant",
+        url: "/login",
+        icons: [
+          {
+            src: "/icons/icon-192.svg",
+            sizes: "192x192",
+            type: "image/svg+xml",
+          },
+        ],
+      },
+    ],
   };
 }

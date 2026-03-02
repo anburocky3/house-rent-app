@@ -109,7 +109,9 @@ export default function RoleLoginForm({
       _deleted: false,
     };
 
-    await setDoc(doc(db, "users", profileDocId), profileUpdate, { merge: true });
+    await setDoc(doc(db, "users", profileDocId), profileUpdate, {
+      merge: true,
+    });
 
     return resolvedRole;
   };
@@ -329,6 +331,26 @@ export default function RoleLoginForm({
           >
             {loading ? "Signing in..." : "Continue"}
           </button>
+          {/* add the owner login link */}
+          <div className=" text-center">
+            {role === "tenant" && (
+              <a
+                href="/login/super"
+                className="text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-50"
+              >
+                Login as Owner
+              </a>
+            )}
+
+            {role === "admin" && (
+              <a
+                href="/login"
+                className="text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-50"
+              >
+                Tenant Login
+              </a>
+            )}
+          </div>
         </form>
       </div>
     </div>
