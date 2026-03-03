@@ -83,11 +83,32 @@ export const initiateUPIPayment = (params: UPIPaymentParams): void => {
 
   const upiUrl = generateUPIUrl(params);
 
-  // Direct navigation is more reliable across browsers
-  window.location.href = upiUrl;
+  // Android-specific intent sequence, iOS and others use generic URL
+  const isAndroid = /Android/i.test(navigator.userAgent);
 
-  // If the page remains visible after a short delay it means the intent
-  // wasn't handled (no UPI app installed) so we show an alert.
+  if (isAndroid) {
+    const queryString = upiUrl.replace(/^upi:\/\//, "");
+    const gpayIntent = `intent://${queryString}#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;end`;
+    const phonepeIntent = `intent://${queryString}#Intent;scheme=upi;package=com.phonepe.app;end`;
+
+    // launch Google Pay intent first
+    window.location.href = gpayIntent;
+
+    // after a bit try PhonePe
+    setTimeout(() => {
+      window.location.href = phonepeIntent;
+    }, 500);
+
+    // fallback to generic UPI
+    setTimeout(() => {
+      window.location.href = upiUrl;
+    }, 1000);
+  } else {
+    // non-Android (iOS, etc.) just open the UPI URL
+    window.location.href = upiUrl;
+  }
+
+  // notify if nothing handled
   setTimeout(() => {
     if (document.visibilityState === "visible") {
       alert(

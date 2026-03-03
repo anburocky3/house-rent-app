@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useToast } from "./Toast";
 
 type CopyValueButtonProps = {
   value: string;
@@ -14,6 +15,7 @@ export default function CopyValueButton({
   className,
 }: CopyValueButtonProps) {
   const [isCopied, setIsCopied] = useState(false);
+  const toast = useToast();
 
   const handleCopy = async () => {
     if (!value) {
@@ -23,6 +25,7 @@ export default function CopyValueButton({
     try {
       await navigator.clipboard.writeText(value);
       setIsCopied(true);
+      toast.show(`${label} copied`);
       setTimeout(() => setIsCopied(false), 1400);
     } catch {
       setIsCopied(false);

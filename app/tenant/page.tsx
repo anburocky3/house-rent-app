@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import LogoutButton from "../components/LogoutButton";
 import CopyValueButton from "../components/CopyValueButton";
 import PushNotificationSetup from "../components/PushNotificationSetup";
 import TenantBottomNav from "./_components/TenantBottomNav";
 import { useTenantDashboardData } from "./_hooks/useTenantDashboardData";
 import { initiateUPIPayment } from "@/lib/upiPayment";
+import { useToast } from "../components/Toast";
 
 export default function TenantDashboard() {
   const {
@@ -20,6 +22,11 @@ export default function TenantDashboard() {
     formatINR,
     toTelHref,
   } = useTenantDashboardData();
+
+  const [paymentStatusMessage, setPaymentStatusMessage] = useState<
+    string | null
+  >(null);
+  const toast = useToast();
 
   if (isCheckingAccess || !isAllowed) {
     return (
@@ -36,8 +43,7 @@ export default function TenantDashboard() {
   const currentMeterReading = pendingLedger?.current_meter_reading ?? 0;
   const consumedUnits =
     currentMeterReading > 0 ? currentMeterReading - initialMeterReading : 0;
-  const currentUnitCost =
-    consumedUnits > 0 ? consumedUnits * unitPrice : 0;
+  const currentUnitCost = consumedUnits > 0 ? consumedUnits * unitPrice : 0;
   const hasCurrentReading =
     typeof pendingLedger?.current_meter_reading === "number" &&
     pendingLedger.current_meter_reading > 0;
@@ -127,8 +133,31 @@ export default function TenantDashboard() {
     ownerProfile?.phone_number || ownerProfile?.emergency_contact?.phone;
   const today = new Date();
   const isUpiPaymentWindow = today.getDate() >= 1 && today.getDate() <= 3;
+  const upiDaysLeft = isUpiPaymentWindow ? 3 - today.getDate() : null;
   const ownerUpiId =
     ownerProfile?.upi_id || process.env.NEXT_PUBLIC_OWNER_UPI_ID || "";
+
+  // when we're outside the window, how many days until 1st of next available window
+  const daysUntilWindow = !isUpiPaymentWindow
+    ? today.getDate() > 3
+      ? Math.ceil(
+          (new Date(today.getFullYear(), today.getMonth() + 1, 1).getTime() -
+            today.getTime()) /
+            (1000 * 60 * 60 * 24),
+        )
+      : 1 - today.getDate()
+    : 0;
+
+  // visual helpers
+  const isOverdue = dueDateInfo.daysText.includes("overdue");
+  const dueTextClass = isOverdue
+    ? "text-red-600 dark:text-red-400"
+    : dueDateInfo.daysText === "Due today"
+      ? "text-orange-600 dark:text-orange-300"
+      : "text-zinc-700 dark:text-zinc-200";
+  const amountCardExtras = isOverdue
+    ? "border-red-500 bg-red-50 dark:border-red-400 dark:bg-red-900/20"
+    : "";
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-zinc-100 px-4 pb-24 pt-6 font-sans text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
@@ -145,23 +174,54 @@ export default function TenantDashboard() {
           </p>
         </section>
 
-        <section className="rounded-3xl border border-zinc-900 bg-zinc-950 p-5 text-zinc-50 shadow-lg dark:border-zinc-100 dark:bg-zinc-50 dark:text-zinc-950">
+        <section
+          className={`rounded-3xl border p-5 text-zinc-50 shadow-lg dark:text-zinc-950 ${amountCardExtras} border-zinc-900 bg-zinc-950 dark:border-zinc-100 dark:bg-zinc-50`}
+        >
           <p className="text-xs font-semibold uppercase tracking-[0.2em] opacity-80">
             Amount Owed
           </p>
           <p className="mt-3 text-5xl font-extrabold leading-none sm:text-6xl">
             {formatINR.format(amountOwed)}
           </p>
-          <p className="mt-3 wrap-break-word text-sm opacity-90">
+          <p
+            className={`mt-3 wrap-break-word text-sm opacity-90 ${dueTextClass}`}
+          >
             <span className="font-semibold ">{dueDateInfo.label}</span>{" "}
             <span>({dueDateInfo.daysText})</span>
           </p>
+          {isUpiPaymentWindow && (
+            <div className="mt-3 flex flex-col items-start gap-2 transition-opacity duration-300">
+              <div className="flex items-center space-x-2">
+                <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-600">
+                  UPI ID:
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-sm text-zinc-900 dark:text-zinc-500">
+                    {ownerUpiId || "-"}
+                  </span>
+                  {ownerUpiId ? (
+                    <CopyValueButton value={ownerUpiId} label="Owner UPI ID" />
+                  ) : null}
+                </div>
+              </div>
+
+              {upiDaysLeft !== null && (
+                <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                  {upiDaysLeft === 0
+                    ? "Last day to pay"
+                    : `Ends in ${upiDaysLeft} day${upiDaysLeft > 1 ? "s" : ""}`}
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
             {isUpiPaymentWindow && ownerUpiId ? (
               <button
                 type="button"
                 onClick={() => {
+                  setPaymentStatusMessage("Opening UPI app...");
+                  toast.show("Redirecting to payment app…");
                   initiateUPIPayment({
                     upiAddress: ownerUpiId,
                     payeeName: ownerProfile?.full_name || "Owner",
@@ -169,8 +229,9 @@ export default function TenantDashboard() {
                     transactionRef: `rent_${pendingLedger?.month_year?.replace(/\s+/g, "_") || "payment"}`,
                     description: "House rent payment",
                   });
+                  setTimeout(() => setPaymentStatusMessage(null), 2500);
                 }}
-                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-zinc-50 px-4 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200 dark:bg-zinc-950 dark:text-zinc-50 dark:hover:bg-zinc-800"
+                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-zinc-50 px-4 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200 hover:scale-[1.02] active:scale-95 dark:bg-zinc-950 dark:text-zinc-50 dark:hover:bg-zinc-800"
               >
                 Pay with UPI
               </button>
@@ -188,9 +249,20 @@ export default function TenantDashboard() {
             </div>
           </div>
 
+          {paymentStatusMessage && (
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+              {paymentStatusMessage}
+            </p>
+          )}
+
           {!isUpiPaymentWindow ? (
             <p className="mt-2 text-xs font-semibold opacity-80">
               UPI payment window is from 1st to 3rd of each month.
+              {daysUntilWindow > 0
+                ? ` (opens in ${daysUntilWindow} day${
+                    daysUntilWindow > 1 ? "s" : ""
+                  })`
+                : ""}
             </p>
           ) : null}
         </section>
@@ -299,11 +371,17 @@ export default function TenantDashboard() {
                   )
                   .slice(0, 6)
                   .map((ledger) => {
-                    const ledgerUnits = ledger.units_consumed ?? 0;
-                    const ledgerCost =
-                      ledgerUnits > 0
-                        ? ledgerUnits * unitPrice
-                        : (ledger.electricity_total ?? 0);
+                    const cur = ledger.current_meter_reading ?? 0;
+                    const prev =
+                      typeof ledger.prev_meter_reading === "number"
+                        ? ledger.prev_meter_reading
+                        : Math.max(0, cur - (ledger.units_consumed ?? 0));
+                    const units =
+                      typeof ledger.units_consumed === "number"
+                        ? ledger.units_consumed
+                        : Math.max(0, cur - prev);
+                    const ledgerCost = units * unitPrice;
+
                     return (
                       <div
                         key={ledger.month_year}
@@ -314,8 +392,7 @@ export default function TenantDashboard() {
                             {ledger.month_year}
                           </p>
                           <p className="mt-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                            Reading: {ledger.current_meter_reading} units·{" "}
-                            {ledgerUnits} used
+                            {`${prev} - ${cur} = ${units}`}
                           </p>
                         </div>
                         <div className="ml-2 text-right">
@@ -323,7 +400,12 @@ export default function TenantDashboard() {
                             {formatINR.format(ledgerCost)}
                           </p>
                           <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                            {ledger.payment_status === "paid" ? "✓ Paid" : "Pending"}
+                            for {units} unit{units === 1 ? "" : "s"}
+                          </p>
+                          <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                            {ledger.payment_status === "paid"
+                              ? "✓ Paid"
+                              : "Pending"}
                           </p>
                         </div>
                       </div>
@@ -440,7 +522,9 @@ export default function TenantDashboard() {
           <div className="mt-3 space-y-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
             <div className="flex min-w-0 items-center gap-2 rounded-xl border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
               <span aria-hidden="true">📞</span>
-              <span className="min-w-0 flex-1 truncate">{supportPhone || "-"}</span>
+              <span className="min-w-0 flex-1 truncate">
+                {supportPhone || "-"}
+              </span>
               {supportPhone ? (
                 <CopyValueButton
                   value={supportPhone}

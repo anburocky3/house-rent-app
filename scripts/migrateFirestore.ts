@@ -183,7 +183,7 @@ const billingLedgerSchema = {
   billing_id: "2026_02_ledger",
   property_id: db.doc("properties/PROPERTY_ID"),
   month_year: "February 2026",
-  prev_meter_reading: 0,
+  prev_meter_reading: 5348,
   current_meter_reading: 0,
   units_consumed: 0,
   electricity_total: 0,
