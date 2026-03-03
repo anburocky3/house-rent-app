@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import LogoutButton from "../components/LogoutButton";
+import PushNotificationSetup from "../components/PushNotificationSetup";
 import AdminBottomNav from "./_components/AdminBottomNav";
 import { useAdminDashboardData } from "./_hooks/useAdminData";
 
@@ -252,6 +253,7 @@ export default function AdminDashboard() {
           )}
         </section>
       </main>
+      <PushNotificationSetup />
       <AdminBottomNav />
     </div>
   );

@@ -74,6 +74,16 @@ curl -X POST http://localhost:3000/api/notifications/send \
 	}'
 ```
 
+## Automatic Unit Calculation via Initial Meter Reading
+
+To reduce manual effort when calculating electricity consumption, each property now stores an *initial meter reading*.
+
+- When creating a property (either via UI or seeding), you can specify the current meter value.
+- Subsequent monthly entries use this reading as the "previous" value for the first billing run.
+- Admin dashboard automatically computes units consumed based on the last reading or the initial value.
+
+This lets you simply enter the current meter figure and have the app figure out the units for all properties.
+
 ## Vercel Cron: Month-End Rent Reminders
 
 This project includes a daily cron endpoint at `/api/cron/monthly-reminders`.

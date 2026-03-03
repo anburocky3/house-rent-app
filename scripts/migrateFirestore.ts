@@ -58,6 +58,7 @@ const propertiesSchema = {
   rent_amount: 7000,
   water_charge: 200,
   electricity_rate: 6,
+  initial_meter_reading: 0,
   terms_and_conditions: [
     {
       id: 1,
@@ -220,6 +221,16 @@ const run = async () => {
   await db.collection("properties").doc("_schema").set(propertiesSchema, {
     merge: true,
   });
+
+  // also backfill initial_meter_reading on existing property docs
+  const propSnapshot = await db.collection("properties").get();
+  for (const propDoc of propSnapshot.docs) {
+    const data = propDoc.data();
+    if (data.initial_meter_reading === undefined) {
+      await propDoc.ref.set({ initial_meter_reading: 0 }, { merge: true });
+    }
+  }
+
   await db
     .collection("billing_ledger")
     .doc("_schema")

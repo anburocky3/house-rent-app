@@ -2,6 +2,7 @@
 
 import LogoutButton from "../components/LogoutButton";
 import CopyValueButton from "../components/CopyValueButton";
+import PushNotificationSetup from "../components/PushNotificationSetup";
 import TenantBottomNav from "./_components/TenantBottomNav";
 import { useTenantDashboardData } from "./_hooks/useTenantDashboardData";
 
@@ -29,7 +30,8 @@ export default function TenantDashboard() {
   const rentAmount = propertyDetails?.rent_amount ?? 0;
   const waterCost = propertyDetails?.water_charge ?? 0;
   const unitPrice = propertyDetails?.electricity_rate ?? 0;
-  const previousUnit = pendingLedger?.prev_meter_reading ?? 0;
+  const previousUnit =
+    pendingLedger?.prev_meter_reading ?? propertyDetails?.initial_meter_reading ?? 0;
   const currentUnit = pendingLedger?.current_meter_reading ?? 0;
   const consumedUnits = Math.max(currentUnit - previousUnit, 0);
   const currentUnitCost =
@@ -372,6 +374,7 @@ export default function TenantDashboard() {
           </div>
         </section>
       </main>
+      <PushNotificationSetup />
       <TenantBottomNav />
     </div>
   );

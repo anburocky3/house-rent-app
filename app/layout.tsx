@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import AppFooter from "@/app/components/AppFooter";
 import InstallPrompt from "./components/InstallPrompt";
-import PushNotificationSetup from "./components/PushNotificationSetup";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -49,7 +48,6 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} flex min-h-screen flex-col bg-zinc-50 text-zinc-950 antialiased dark:bg-zinc-950 dark:text-zinc-50`}
       >
         <InstallPrompt />
-        <PushNotificationSetup />
         <div className="flex-1">{children}</div>
         <AppFooter />
       </body>

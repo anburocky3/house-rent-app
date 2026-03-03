@@ -15,6 +15,7 @@ type PropertyInput = {
   water: string;
   rate: string;
   advance: string;
+  initialMeter?: string;
   terms: string;
   schedule: string;
   fittings: string;
@@ -89,6 +90,9 @@ const getPropertyDetailsValidation = (input: PropertyInput) => {
   if (!isNonNegativeNumber(input.rate)) {
     return "Electricity rate should be a non-negative number.";
   }
+  if (input.initialMeter && !isNonNegativeNumber(input.initialMeter)) {
+    return "Initial meter reading should be a non-negative number.";
+  }
   if (!isNonNegativeNumber(input.advance)) {
     return "Advance paid should be a non-negative number.";
   }
@@ -124,6 +128,7 @@ export default function AdminPropertiesPage() {
   const [newRent, setNewRent] = useState("0");
   const [newWater, setNewWater] = useState("0");
   const [newRate, setNewRate] = useState("0");
+  const [newInitialMeter, setNewInitialMeter] = useState("0");
   const [newAdvance, setNewAdvance] = useState("0");
   const [newTerms, setNewTerms] = useState("");
   const [newSchedule, setNewSchedule] = useState("");
@@ -155,6 +160,9 @@ export default function AdminPropertiesPage() {
     if (!isNonNegativeNumber(newRate)) {
       return "Electricity rate should be a non-negative number.";
     }
+    if (!isNonNegativeNumber(newInitialMeter)) {
+      return "Initial meter reading should be a non-negative number.";
+    }
     if (!isNonNegativeNumber(newAdvance)) {
       return "Advance paid should be a non-negative number.";
     }
@@ -162,6 +170,7 @@ export default function AdminPropertiesPage() {
   }, [
     newAdvance,
     newContactPhone,
+    newInitialMeter,
     newPropertyId,
     newRate,
     newRent,
@@ -323,6 +332,17 @@ export default function AdminPropertiesPage() {
                 <input
                   type="number"
                   min={0}
+                  value={newInitialMeter}
+                  onChange={(event) => {
+                    setNewInitialMeter(event.target.value);
+                    setCreateError("");
+                  }}
+                  placeholder="Initial meter"
+                  className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
+                />
+                <input
+                  type="number"
+                  min={0}
                   value={newAdvance}
                   onChange={(event) => {
                     setNewAdvance(event.target.value);
@@ -397,6 +417,7 @@ export default function AdminPropertiesPage() {
                       rent_amount: Number(newRent || 0),
                       water_charge: Number(newWater || 0),
                       electricity_rate: Number(newRate || 0),
+                      initial_meter_reading: Number(newInitialMeter || 0),
                       terms_and_conditions: newTerms,
                       schedule_of_property: newSchedule,
                       fitting_and_fixtures: newFittings,
@@ -411,6 +432,7 @@ export default function AdminPropertiesPage() {
                     setNewRent("0");
                     setNewWater("0");
                     setNewRate("0");
+                    setNewInitialMeter("0");
                     setNewAdvance("0");
                     setNewTerms("");
                     setNewSchedule("");
@@ -466,6 +488,7 @@ export default function AdminPropertiesPage() {
                   rent: String(property.rent_amount ?? 0),
                   water: String(property.water_charge ?? 0),
                   rate: String(property.electricity_rate ?? 0),
+                  initialMeter: String(property.initial_meter_reading ?? ""),
                   advance: String(property.advance_paid ?? 0),
                   terms: toMultilineContent(property.terms_and_conditions),
                   schedule: toMultilineContent(property.schedule_of_property),
@@ -493,6 +516,10 @@ export default function AdminPropertiesPage() {
                       <span className="bg-zinc-800 px-2 py-0.5 rounded text-xs">
                         {propertyId}
                       </span>
+                    </p>
+                    <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                      Initial meter reading:{" "}
+                      {property.initial_meter_reading ?? "-"}
                     </p>
 
                     <div className="mt-3 grid grid-cols-2 gap-2">
@@ -626,6 +653,22 @@ export default function AdminPropertiesPage() {
                           }))
                         }
                         placeholder="₹/unit"
+                        className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
+                      />
+                      <input
+                        type="number"
+                        min={0}
+                        value={currentInput.initialMeter || ""}
+                        onChange={(event) =>
+                          setPropertyInputs((previous) => ({
+                            ...previous,
+                            [propertyId]: {
+                              ...currentInput,
+                              initialMeter: event.target.value,
+                            },
+                          }))
+                        }
+                        placeholder="Initial meter"
                         className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
                       />
                       <input
@@ -804,6 +847,9 @@ export default function AdminPropertiesPage() {
                               rent_amount: Number(currentInput.rent || 0),
                               water_charge: Number(currentInput.water || 0),
                               electricity_rate: Number(currentInput.rate || 0),
+                              initial_meter_reading: Number(
+                                currentInput.initialMeter || 0,
+                              ),
                               terms_and_conditions: currentInput.terms,
                               schedule_of_property: currentInput.schedule,
                               fitting_and_fixtures: currentInput.fittings,

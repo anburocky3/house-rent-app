@@ -77,6 +77,7 @@ export type PropertyDetails = {
   rent_amount?: number;
   water_charge?: number;
   electricity_rate?: number;
+  initial_meter_reading?: number;
   property_id?: string;
   street_name?: string;
   owner_uid?: { id?: string };

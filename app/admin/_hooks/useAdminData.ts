@@ -88,6 +88,8 @@ type PropertySummary = {
   rent_amount?: number;
   water_charge?: number;
   electricity_rate?: number;
+  /** reading recorded when property was first created */
+  initial_meter_reading?: number;
   terms_and_conditions?:
     | string
     | Array<{
@@ -181,6 +183,7 @@ type CreatePropertyInput = {
   rent_amount: number;
   water_charge: number;
   electricity_rate: number;
+  initial_meter_reading?: number;
   terms_and_conditions?: string;
   schedule_of_property?: string;
   fitting_and_fixtures?: string;
@@ -199,6 +202,7 @@ type UpdatePropertyInput = {
   rent_amount: number;
   water_charge: number;
   electricity_rate: number;
+  initial_meter_reading?: number;
   terms_and_conditions?: string;
   schedule_of_property?: string;
   fitting_and_fixtures?: string;
@@ -538,6 +542,67 @@ export function useAdminDashboardData() {
     await loadData();
   };
 
+  const sendMeterUpdateNotification = async (
+    propertyId: string,
+    currentMeterReading: number,
+  ) => {
+    try {
+      // Get all tenants for this property
+      const propertyRef = doc(db, "properties", propertyId);
+      const propertyDocs = await getDocs(
+        query(
+          collection(db, "users"),
+          where("role", "==", "tenant"),
+          where("property_id", "==", propertyRef),
+        ),
+      );
+
+      // Collect tenant UIDs with valid FCM tokens
+      const tenantUids: string[] = [];
+      propertyDocs.docs.forEach((tenantDoc) => {
+        const tenant = tenantDoc.data() as TenantSummary;
+        if (
+          !tenant._deleted &&
+          tenant.fcmToken &&
+          tenant.fcmToken.trim().length > 0
+        ) {
+          tenantUids.push(tenantDoc.id);
+        }
+      });
+
+      if (tenantUids.length === 0) {
+        // No tenants with FCM tokens to notify
+        return;
+      }
+
+      // Send notification to all tenant UIDs
+      const response = await fetch("/api/admin/send-notification", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-secret":
+            process.env.NEXT_PUBLIC_ADMIN_API_SECRET || "",
+        },
+        body: JSON.stringify({
+          title: "Meter Update",
+          body: `Property meter reading has been updated to ${currentMeterReading} units.`,
+          recipients: { tenantUids },
+          data: {
+            propertyId,
+            meterReading: String(currentMeterReading),
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        console.error("Failed to send meter update notification:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error sending meter update notification:", error);
+      // Don't throw - we don't want to fail the meter update if notification fails
+    }
+  };
+
   const updatePropertyCurrentUnits = async (
     propertyId: string,
     nextCurrentUnit: number,
@@ -574,6 +639,7 @@ export function useAdminDashboardData() {
         updated_at: serverTimestamp(),
       });
       await loadData();
+      await sendMeterUpdateNotification(propertyId, nextCurrentUnit);
       return;
     }
 
@@ -599,6 +665,7 @@ export function useAdminDashboardData() {
     });
 
     await loadData();
+    await sendMeterUpdateNotification(propertyId, nextCurrentUnit);
   };
 
   const saveTenant = async (input: UpdateTenantInput) => {

@@ -101,6 +101,15 @@ const resolveUserDocId = async (authUid: string, email?: string | null) => {
   return activeDoc?.id || "";
 };
 
+const getUserRole = async (userDocId: string) => {
+  const userDoc = await getDoc(doc(db, "users", userDocId));
+  if (userDoc.exists()) {
+    const userData = userDoc.data() as { role?: string };
+    return userData.role || "user";
+  }
+  return "user";
+};
+
 export default function PushNotificationSetup() {
   const [status, setStatus] = useState<PushNotificationSetupState>("idle");
   const [message, setMessage] = useState("");
@@ -170,11 +179,14 @@ export default function PushNotificationSetup() {
           return;
         }
 
+        const userRole = await getUserRole(userDocId);
+
         await setDoc(
           doc(db, "users", userDocId),
           {
             auth_uid: currentUser.uid,
             fcmToken: token,
+            fcm_type: userRole,
             notification_permission: "granted",
             updated_at: serverTimestamp(),
           },
@@ -319,7 +331,10 @@ export default function PushNotificationSetup() {
   };
 
   const hidden = useMemo(
-    () => status === "unsupported" || status === "not-logged-in",
+    () =>
+      status === "unsupported" ||
+      status === "not-logged-in" ||
+      status === "enabled",
     [status],
   );
 
@@ -332,16 +347,12 @@ export default function PushNotificationSetup() {
       <button
         type="button"
         onClick={() => {
-          if (status !== "enabled") {
-            void enableNotifications();
-            return;
-          }
-
-          setMessage("Push alerts are already enabled for this device.");
+          void enableNotifications();
         }}
         disabled={status === "requesting"}
-        aria-label="Push notifications"
+        aria-label="Enable push notifications"
         className="fixed bottom-20 right-4 z-40 inline-flex h-12 w-12 items-center justify-center rounded-full bg-zinc-950 text-lg text-zinc-50 shadow-lg transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
+        title="Enable notifications"
       >
         🔔
       </button>

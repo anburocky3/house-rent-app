@@ -49,11 +49,28 @@ const OwnerIcon = ({ className }: NavIconProps) => (
   </svg>
 );
 
+const SettingsIcon = ({ className }: NavIconProps) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+    <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" />
+    <path
+      d="M12 2v4m0 12v4M2 12h4m12 0h4"
+      stroke="currentColor"
+      strokeWidth="1.8"
+    />
+    <path
+      d="M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"
+      stroke="currentColor"
+      strokeWidth="1.8"
+    />
+  </svg>
+);
+
 const items = [
   { href: "/tenant", label: "Home", Icon: HomeIcon },
   { href: "/tenant/history", label: "History", Icon: HistoryIcon },
   { href: "/tenant/complaints", label: "Complaints", Icon: ComplaintsIcon },
   { href: "/tenant/owner", label: "Owner", Icon: OwnerIcon },
+  { href: "/tenant/settings", label: "Settings", Icon: SettingsIcon },
 ];
 
 export default function TenantBottomNav() {
@@ -61,7 +78,7 @@ export default function TenantBottomNav() {
 
   return (
     <nav className="fixed bottom-3 left-1/2 z-30 w-[min(94%,460px)] -translate-x-1/2">
-      <div className="grid grid-cols-4 gap-1 rounded-2xl border border-zinc-300 bg-white p-2 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="grid grid-cols-5 gap-1 rounded-2xl border border-zinc-300 bg-white p-2 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
         {items.map((item) => {
           const active = pathname === item.href;
           const Icon = item.Icon;

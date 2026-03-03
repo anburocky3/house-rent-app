@@ -1,9 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "@/firebaseConfig";
 import LogoutButton from "../../components/LogoutButton";
 import AdminBottomNav from "../_components/AdminBottomNav";
+import { disableNotifications, resolveUserDocId } from "@/lib/notificationUtils";
 import { useAdminDashboardData } from "../_hooks/useAdminData";
 
 const normalizePhone = (value: string) => value.replace(/\D/g, "");
@@ -26,6 +29,8 @@ export default function AdminSettingsPage() {
   const [pincode, setPincode] = useState("");
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [disablingNotifications, setDisablingNotifications] = useState(false);
 
   useEffect(() => {
     setFullName((adminProfile?.full_name as string | undefined) || "");
@@ -42,6 +47,37 @@ export default function AdminSettingsPage() {
     );
     setPincode((adminProfile?.pincode as string | undefined) || "");
   }, [adminProfile]);
+
+  const checkNotificationStatus = useCallback(async () => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      return;
+    }
+
+    try {
+      const userDocId = await resolveUserDocId(
+        currentUser.uid,
+        currentUser.email,
+      );
+      if (!userDocId) {
+        return;
+      }
+
+      const userDoc = await getDoc(doc(db, "users", userDocId));
+      if (userDoc.exists()) {
+        const userData = userDoc.data() as { fcmToken?: string };
+        setNotificationsEnabled(
+          !!userData.fcmToken && userData.fcmToken.trim().length > 0,
+        );
+      }
+    } catch (error) {
+      console.error("Error checking notification status:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    void checkNotificationStatus();
+  }, [checkNotificationStatus]);
 
   if (isCheckingAccess || !isAllowed) {
     return (
@@ -101,6 +137,31 @@ export default function AdminSettingsPage() {
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDisableNotifications = async () => {
+    if (!notificationsEnabled) {
+      return;
+    }
+
+    setDisablingNotifications(true);
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      setDisablingNotifications(false);
+      return;
+    }
+
+    try {
+      const result = await disableNotifications(
+        currentUser.uid,
+        currentUser.email,
+      );
+      if (result.success) {
+        setNotificationsEnabled(false);
+      }
+    } finally {
+      setDisablingNotifications(false);
     }
   };
 
@@ -191,6 +252,36 @@ export default function AdminSettingsPage() {
               {saving ? "Saving..." : "Save settings"}
             </button>
           </form>
+
+          <div className="mt-3 rounded-xl border border-zinc-300 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-950/40">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-zinc-600 dark:text-zinc-400">
+              My notifications
+            </p>
+            <p className="mt-1 text-xs text-zinc-700 dark:text-zinc-300">
+              Status:{" "}
+              <span
+                className={
+                  notificationsEnabled
+                    ? "font-semibold text-green-600 dark:text-green-400"
+                    : "font-semibold text-zinc-600 dark:text-zinc-400"
+                }
+              >
+                {notificationsEnabled ? "✓ Enabled" : "Disabled"}
+              </span>
+            </p>
+            {notificationsEnabled ? (
+              <button
+                type="button"
+                onClick={() => {
+                  void handleDisableNotifications();
+                }}
+                disabled={disablingNotifications}
+                className="mt-3 inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-red-300 bg-red-50 px-3 text-sm font-bold text-red-900 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-700 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950"
+              >
+                {disablingNotifications ? "Disabling..." : "Disable notifications"}
+              </button>
+            ) : null}
+          </div>
 
           <div className="mt-3 rounded-xl border border-zinc-300 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-950/40">
             <p className="text-xs font-semibold uppercase tracking-[0.08em] text-zinc-600 dark:text-zinc-400">

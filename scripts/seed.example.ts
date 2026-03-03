@@ -127,6 +127,7 @@ const seed = async () => {
         rent_amount: 7000,
         water_charge: 200,
         electricity_rate: 6,
+        initial_meter_reading: 0,
         advance_paid: 15000,
         ward_no: "",
         street_name: "Second Street, Ramalingapuram",
