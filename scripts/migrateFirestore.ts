@@ -185,6 +185,7 @@ const billingLedgerSchema = {
   month_year: "February 2026",
   prev_meter_reading: 0,
   current_meter_reading: 0,
+  units_consumed: 0,
   electricity_total: 0,
   net_total: 0,
   payment_status: "pending",
@@ -228,6 +229,26 @@ const run = async () => {
     const data = propDoc.data();
     if (data.initial_meter_reading === undefined) {
       await propDoc.ref.set({ initial_meter_reading: 0 }, { merge: true });
+    }
+  }
+
+  // backfill units_consumed on existing billing ledgers
+  const ledgerSnapshot = await db.collection("billing_ledger").get();
+  for (const ledgerDoc of ledgerSnapshot.docs) {
+    const data = ledgerDoc.data();
+    if (
+      data.units_consumed === undefined &&
+      data.current_meter_reading !== undefined &&
+      data.prev_meter_reading !== undefined
+    ) {
+      const consumedUnits = Math.max(
+        data.current_meter_reading - data.prev_meter_reading,
+        0,
+      );
+      await ledgerDoc.ref.set(
+        { units_consumed: consumedUnits },
+        { merge: true },
+      );
     }
   }
 

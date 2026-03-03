@@ -12,6 +12,7 @@ export default function TenantDashboard() {
     isCheckingAccess,
     tenantName,
     propertyDetails,
+    ledgers,
     pendingLedger,
     tenants,
     ownerProfile,
@@ -30,14 +31,12 @@ export default function TenantDashboard() {
   const rentAmount = propertyDetails?.rent_amount ?? 0;
   const waterCost = propertyDetails?.water_charge ?? 0;
   const unitPrice = propertyDetails?.electricity_rate ?? 0;
-  const previousUnit =
-    pendingLedger?.prev_meter_reading ?? propertyDetails?.initial_meter_reading ?? 0;
-  const currentUnit = pendingLedger?.current_meter_reading ?? 0;
-  const consumedUnits = Math.max(currentUnit - previousUnit, 0);
+  const initialMeterReading = propertyDetails?.initial_meter_reading ?? 0;
+  const currentMeterReading = pendingLedger?.current_meter_reading ?? 0;
+  const consumedUnits =
+    currentMeterReading > 0 ? currentMeterReading - initialMeterReading : 0;
   const currentUnitCost =
-    consumedUnits > 0
-      ? consumedUnits * unitPrice
-      : (pendingLedger?.electricity_total ?? 0);
+    consumedUnits > 0 ? consumedUnits * unitPrice : 0;
   const hasCurrentReading =
     typeof pendingLedger?.current_meter_reading === "number" &&
     pendingLedger.current_meter_reading > 0;
@@ -243,6 +242,89 @@ export default function TenantDashboard() {
               </article>
             ))}
           </div>
+
+          <article className="rounded-2xl border border-zinc-300 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-700 dark:text-zinc-300">
+              Electricity meter
+            </p>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <div className="rounded-xl border border-zinc-300 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950/40">
+                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-zinc-600 dark:text-zinc-400">
+                  Current reading
+                </p>
+                <p className="mt-2 text-2xl font-extrabold text-zinc-950 dark:text-zinc-50">
+                  {currentMeterReading > 0 ? currentMeterReading : "—"}
+                </p>
+                <p className="mt-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                  Units
+                </p>
+              </div>
+              <div className="rounded-xl border border-zinc-300 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950/40">
+                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-zinc-600 dark:text-zinc-400">
+                  Units consumed
+                </p>
+                <p className="mt-2 text-2xl font-extrabold text-zinc-950 dark:text-zinc-50">
+                  {consumedUnits > 0 ? consumedUnits : "—"}
+                </p>
+                <p className="mt-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                  This month
+                </p>
+              </div>
+            </div>
+          </article>
+
+          {ledgers.length > 0 ? (
+            <article className="rounded-2xl border border-zinc-300 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-700 dark:text-zinc-300">
+                Meter history
+              </p>
+              <div className="mt-3 space-y-2">
+                {ledgers
+                  .filter(
+                    (ledger) =>
+                      ledger.current_meter_reading &&
+                      ledger.current_meter_reading > 0,
+                  )
+                  .sort(
+                    (a, b) =>
+                      (b.updated_at?.toDate?.()?.getTime() ?? 0) -
+                      (a.updated_at?.toDate?.()?.getTime() ?? 0),
+                  )
+                  .slice(0, 6)
+                  .map((ledger) => {
+                    const ledgerUnits = ledger.units_consumed ?? 0;
+                    const ledgerCost =
+                      ledgerUnits > 0
+                        ? ledgerUnits * unitPrice
+                        : (ledger.electricity_total ?? 0);
+                    return (
+                      <div
+                        key={ledger.month_year}
+                        className="flex items-center justify-between rounded-xl border border-zinc-300 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950/40"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                            {ledger.month_year}
+                          </p>
+                          <p className="mt-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                            Reading: {ledger.current_meter_reading} units·{" "}
+                            {ledgerUnits} used
+                          </p>
+                        </div>
+                        <div className="ml-2 text-right">
+                          <p className="text-sm font-bold text-zinc-950 dark:text-zinc-50">
+                            {formatINR.format(ledgerCost)}
+                          </p>
+                          <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                            {ledger.payment_status === "paid" ? "✓ Paid" : "Pending"}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </article>
+          ) : null}
         </section>
 
         <section className="rounded-2xl border border-zinc-300 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">

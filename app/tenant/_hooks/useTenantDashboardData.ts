@@ -85,10 +85,12 @@ export type PropertyDetails = {
 };
 
 export type BillingLedger = {
+  id?: string;
   month_year?: string;
   payment_status?: string;
   prev_meter_reading?: number;
   current_meter_reading?: number;
+  units_consumed?: number;
   electricity_total?: number;
   paid_at?: { toDate?: () => Date } | null;
   updated_at?: { toDate?: () => Date };
@@ -172,9 +174,10 @@ export function useTenantDashboardData() {
           ? await getDoc(doc(db, "users", ownerRef.id))
           : null;
 
-        const allLedgers = ledgerSnap.docs.map(
-          (item) => item.data() as BillingLedger,
-        );
+        const allLedgers = ledgerSnap.docs.map((item) => ({
+          id: item.id,
+          ...(item.data() as BillingLedger),
+        }));
         const pending =
           allLedgers
             .filter((item) => item.payment_status === "pending")

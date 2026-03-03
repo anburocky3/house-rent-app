@@ -121,6 +121,7 @@ export type BillingLedgerSummary = {
   payment_status?: string;
   prev_meter_reading?: number;
   current_meter_reading?: number;
+  units_consumed?: number;
   electricity_total?: number;
   updated_at?: { toDate?: () => Date };
 };
@@ -635,6 +636,7 @@ export function useAdminDashboardData() {
 
       await updateDoc(doc(db, "billing_ledger", latestPendingLedger.id), {
         current_meter_reading: nextCurrentUnit,
+        units_consumed: consumedUnits,
         electricity_total: consumedUnits * unitRate,
         updated_at: serverTimestamp(),
       });
@@ -657,6 +659,7 @@ export function useAdminDashboardData() {
       month_year: monthYear,
       prev_meter_reading: prevReading,
       current_meter_reading: nextCurrentUnit,
+      units_consumed: consumedUnits,
       electricity_total: consumedUnits * unitRate,
       payment_status: "pending",
       paid_at: null,

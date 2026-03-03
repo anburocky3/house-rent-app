@@ -191,6 +191,7 @@ const seed = async () => {
         month_year: "February 2026",
         prev_meter_reading: 0,
         current_meter_reading: 0,
+        units_consumed: 0,
         electricity_total: 0,
         net_total: 0,
         payment_status: "pending",
