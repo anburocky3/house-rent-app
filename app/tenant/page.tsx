@@ -200,7 +200,11 @@ export default function TenantDashboard() {
                     {ownerUpiId || "-"}
                   </span>
                   {ownerUpiId ? (
-                    <CopyValueButton value={ownerUpiId} label="Owner UPI ID" />
+                    <CopyValueButton
+                      value={ownerUpiId}
+                      label="Owner UPI ID"
+                      className="bg-zinc-600 text-zinc-50 hover:bg-zinc-700"
+                    />
                   ) : null}
                 </div>
               </div>

@@ -103,21 +103,56 @@ export default function TenantHistoryPage() {
                     {entry.payment_status || "pending"}
                   </span>
                 </div>
-                <div className="mt-3 grid grid-cols-1 gap-2 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-                  <p>Rent: {formatINR.format(rentAmount)}</p>
-                  <p>Water: {formatINR.format(waterCost)}</p>
-                  <p>
-                    Current charge: {formatINR.format(currentCharge)} (
-                    {consumedUnits} units)
-                  </p>
-                  <p className="text-zinc-600 dark:text-zinc-400">
-                    Due date (around): {getDueDateLabel(entry.month_year)}
-                  </p>
-                  <p className="text-zinc-600 dark:text-zinc-400">
-                    Payment date:{" "}
-                    {entry.paid_at?.toDate?.()?.toLocaleDateString() ||
-                      "Not paid yet"}
-                  </p>
+                <div className="mt-3 text-sm text-zinc-800 dark:text-zinc-200">
+                  <table className="w-full table-fixed text-left border-separate border-spacing-y-3">
+                    <tbody className="font-semibold ">
+                      <tr>
+                        <td className="pr-2">Rent:</td>
+                        <td className="text-right">
+                          {formatINR.format(rentAmount)}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="pr-2">Water:</td>
+                        <td className="text-right">
+                          {formatINR.format(waterCost)}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="pr-2">Current charge:</td>
+                        <td className="text-right">
+                          {formatINR.format(currentCharge)} <br />
+                          <small className="text-zinc-400 text-xs">
+                            {consumedUnits} units
+                          </small>
+                        </td>
+                      </tr>
+                      <tr className="border-y! border-zinc-300! dark:border-zinc-400!">
+                        <td className="pr-2">Total rent due:</td>
+                        <td className="text-right">
+                          {formatINR.format(
+                            rentAmount + waterCost + currentCharge,
+                          )}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <div className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">
+                    <p>
+                      Due date (around): {getDueDateLabel(entry.month_year)}
+                    </p>
+                    {/* <p>
+                      Payment status: {entry.payment_status || "pending"}
+                      {entry.payment_status === "paid" && entry.paid_at ? (
+                        <span>
+                          {" "}
+                          - paid on{" "}
+                          {entry.paid_at?.toDate?.().toLocaleDateString()}
+                        </span>
+                      ) : null}
+                    </p> */}
+                  </div>
                 </div>
               </section>
             );
