@@ -5,6 +5,7 @@ import CopyValueButton from "../components/CopyValueButton";
 import PushNotificationSetup from "../components/PushNotificationSetup";
 import TenantBottomNav from "./_components/TenantBottomNav";
 import { useTenantDashboardData } from "./_hooks/useTenantDashboardData";
+import { initiateUPIPayment } from "@/lib/upiPayment";
 
 export default function TenantDashboard() {
   const {
@@ -128,9 +129,6 @@ export default function TenantDashboard() {
   const isUpiPaymentWindow = today.getDate() >= 1 && today.getDate() <= 3;
   const ownerUpiId =
     ownerProfile?.upi_id || process.env.NEXT_PUBLIC_OWNER_UPI_ID || "";
-  const upiIntentLink = ownerUpiId
-    ? `upi://pay?pa=${encodeURIComponent(ownerUpiId)}&pn=${encodeURIComponent(ownerProfile?.full_name || "Owner")}&am=${amountOwed.toFixed(2)}&cu=INR&tn=${encodeURIComponent("House rent payment")}`
-    : "";
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-zinc-100 px-4 pb-24 pt-6 font-sans text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
@@ -160,20 +158,29 @@ export default function TenantDashboard() {
           </p>
 
           <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {isUpiPaymentWindow && upiIntentLink ? (
-              <a
-                href={upiIntentLink}
+            {isUpiPaymentWindow && ownerUpiId ? (
+              <button
+                type="button"
+                onClick={() => {
+                  initiateUPIPayment({
+                    upiAddress: ownerUpiId,
+                    payeeName: ownerProfile?.full_name || "Owner",
+                    amount: amountOwed,
+                    transactionRef: `rent_${pendingLedger?.month_year?.replace(/\s+/g, "_") || "payment"}`,
+                    description: "House rent payment",
+                  });
+                }}
                 className="inline-flex min-h-12 items-center justify-center rounded-xl bg-zinc-50 px-4 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200 dark:bg-zinc-950 dark:text-zinc-50 dark:hover:bg-zinc-800"
               >
-                Pay with GPay
-              </a>
+                Pay with UPI
+              </button>
             ) : (
               <button
                 type="button"
                 disabled
                 className="inline-flex min-h-12 items-center justify-center rounded-xl border border-zinc-400/50 px-4 text-sm font-bold text-zinc-300/90 opacity-70 dark:border-zinc-600 dark:text-zinc-500"
               >
-                Pay with GPay
+                Pay with UPI
               </button>
             )}
             <div className="inline-flex min-h-12 items-center justify-center rounded-xl border border-zinc-300/50 px-4 text-center text-xs font-semibold leading-tight text-zinc-100 dark:border-zinc-700 dark:text-zinc-900">
