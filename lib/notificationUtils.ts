@@ -63,6 +63,7 @@ export const disableNotifications = async (
       {
         fcmToken: null,
         fcm_type: null,
+        fcm_device: null,
         notification_permission: "denied",
         updated_at: serverTimestamp(),
       },

@@ -7,6 +7,15 @@ export type UserProfile = {
   phone_number?: string;
   upi_id?: string;
   fcmToken?: string;
+  fcm_device?: {
+    device_name?: string;
+    browser?: string;
+    platform?: string;
+    is_mobile?: boolean;
+    user_agent?: string;
+    token_preview?: string;
+    token_updated_at?: unknown;
+  } | null;
   notification_permission?: NotificationPermission | string;
   pincode?: string;
   permanent_address?: string;

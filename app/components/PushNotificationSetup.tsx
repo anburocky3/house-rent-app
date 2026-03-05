@@ -15,6 +15,14 @@ import {
 import { getToken, onMessage } from "firebase/messaging";
 import { auth, db, getClientMessaging } from "../../firebaseConfig";
 
+type NavigatorWithUAData = Navigator & {
+  userAgentData?: {
+    mobile?: boolean;
+    platform?: string;
+    brands?: Array<{ brand?: string; version?: string }>;
+  };
+};
+
 type PushNotificationSetupState =
   | "idle"
   | "unsupported"
@@ -63,6 +71,63 @@ const getValidatedVapidKey = () => {
   return {
     key: vapidKey,
     error: "",
+  };
+};
+
+const getBrowserName = (ua: string, uaData?: NavigatorWithUAData["userAgentData"]) => {
+  const brands = uaData?.brands || [];
+  const preferredBrand = brands.find((item) => {
+    const brand = (item.brand || "").toLowerCase();
+    return brand && brand !== "not;a brand";
+  });
+
+  if (preferredBrand?.brand) {
+    return preferredBrand.brand;
+  }
+
+  if (/edg/i.test(ua)) {
+    return "Edge";
+  }
+  if (/chrome|crios/i.test(ua) && !/edg/i.test(ua)) {
+    return "Chrome";
+  }
+  if (/firefox|fxios/i.test(ua)) {
+    return "Firefox";
+  }
+  if (/safari/i.test(ua) && !/chrome|crios|edg/i.test(ua)) {
+    return "Safari";
+  }
+
+  return "Unknown Browser";
+};
+
+const getDeviceInfo = () => {
+  if (typeof navigator === "undefined") {
+    return {
+      device_name: "Unknown device",
+      browser: "Unknown Browser",
+      platform: "Unknown Platform",
+      is_mobile: false,
+      user_agent: "",
+    };
+  }
+
+  const nav = navigator as NavigatorWithUAData;
+  const userAgent = navigator.userAgent || "";
+  const platform =
+    nav.userAgentData?.platform || navigator.platform || "Unknown Platform";
+  const isMobile =
+    nav.userAgentData?.mobile ??
+    /Android|iPhone|iPad|iPod|Mobile|Windows Phone/i.test(userAgent);
+  const browser = getBrowserName(userAgent, nav.userAgentData);
+  const deviceType = isMobile ? "Mobile" : "Desktop";
+
+  return {
+    device_name: `${deviceType} • ${browser} • ${platform}`,
+    browser,
+    platform,
+    is_mobile: isMobile,
+    user_agent: userAgent,
   };
 };
 
@@ -180,6 +245,7 @@ export default function PushNotificationSetup() {
         }
 
         const userRole = await getUserRole(userDocId);
+        const deviceInfo = getDeviceInfo();
 
         await setDoc(
           doc(db, "users", userDocId),
@@ -187,6 +253,11 @@ export default function PushNotificationSetup() {
             auth_uid: currentUser.uid,
             fcmToken: token,
             fcm_type: userRole,
+            fcm_device: {
+              ...deviceInfo,
+              token_preview: `${token.slice(0, 10)}...${token.slice(-6)}`,
+              token_updated_at: serverTimestamp(),
+            },
             notification_permission: "granted",
             updated_at: serverTimestamp(),
           },
