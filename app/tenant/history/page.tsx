@@ -99,37 +99,61 @@ export default function TenantHistoryPage() {
                   <p className="text-sm font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300">
                     {entry.month_year || "Billing month"}
                   </p>
-                  <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">
+                  <span
+                    className={`text-xs font-semibold uppercase ${entry.payment_status === "paid" ? "text-green-600 dark:text-green-400" : "text-yellow-600 dark:text-yellow-400"}`}
+                    title={
+                      entry.paid_at
+                        ? `Paid on ${entry.paid_at
+                            .toDate?.()
+                            .toLocaleDateString("en-IN", {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            })}  (${entry.paid_at
+                            .toDate?.()
+                            ?.toLocaleTimeString("en-IN", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              hour12: true,
+                            })})`
+                        : undefined
+                    }
+                  >
                     {entry.payment_status || "pending"}
                   </span>
                 </div>
                 <div className="mt-3 text-sm text-zinc-800 dark:text-zinc-200">
-                  <table className="w-full table-fixed text-left border-separate border-spacing-y-3">
-                    <tbody className="font-semibold ">
-                      <tr>
-                        <td className="pr-2">Rent:</td>
-                        <td className="text-right">
+                  <table className="w-full border-collapse">
+                    <tbody className="font-semibold">
+                      <tr className="">
+                        <td className="py-2 pr-2">Rent:</td>
+                        <td className="py-2 text-right">
                           {formatINR.format(rentAmount)}
                         </td>
                       </tr>
-                      <tr>
-                        <td className="pr-2">Water:</td>
-                        <td className="text-right">
+                      <tr className="">
+                        <td className="py-2 pr-2">Water:</td>
+                        <td className="py-2 text-right">
                           {formatINR.format(waterCost)}
                         </td>
                       </tr>
-                      <tr>
-                        <td className="pr-2">Current charge:</td>
-                        <td className="text-right">
+                      <tr className="">
+                        <td className="py-2 pr-2">Current charge:</td>
+                        <td className="py-2 text-right">
                           {formatINR.format(currentCharge)} <br />
-                          <small className="text-zinc-400 text-xs">
+                          <small className="text-xs text-zinc-500 dark:text-zinc-400">
                             {consumedUnits} units
                           </small>
                         </td>
                       </tr>
-                      <tr className="border-y! border-zinc-300! dark:border-zinc-400!">
-                        <td className="pr-2">Total rent due:</td>
-                        <td className="text-right">
+                      <tr>
+                        <td colSpan={2} className="h-1"></td>
+                      </tr>
+                      <tr className="bg-linear-to-r from-blue-50 to-blue-100 dark:from-blue-950/40 dark:to-blue-900/40 rounded-lg">
+                        <td className="py-0.5 px-2 font-bold text-blue-900 dark:text-blue-200">
+                          Total Due:
+                        </td>
+                        <td className="py-1 text-right font-bold text-lg text-blue-600 dark:text-blue-400 pr-2">
                           {formatINR.format(
                             rentAmount + waterCost + currentCharge,
                           )}
@@ -141,17 +165,27 @@ export default function TenantHistoryPage() {
                   <div className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">
                     <p>
                       Due date (around): {getDueDateLabel(entry.month_year)}
-                    </p>
-                    {/* <p>
-                      Payment status: {entry.payment_status || "pending"}
                       {entry.payment_status === "paid" && entry.paid_at ? (
                         <span>
-                          {" "}
-                          - paid on{" "}
-                          {entry.paid_at?.toDate?.().toLocaleDateString()}
+                          {" | Paid on "}
+                          {entry.paid_at
+                            ?.toDate?.()
+                            .toLocaleDateString("en-IN", {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            })}
+                          {" at "}
+                          {entry.paid_at
+                            ?.toDate?.()
+                            .toLocaleTimeString("en-IN", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              hour12: true,
+                            })}
                         </span>
                       ) : null}
-                    </p> */}
+                    </p>
                   </div>
                 </div>
               </section>

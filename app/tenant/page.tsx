@@ -154,7 +154,7 @@ export default function TenantDashboard() {
     ? "text-red-600 dark:text-red-400"
     : dueDateInfo.daysText === "Due today"
       ? "text-orange-600 dark:text-orange-300"
-      : "text-zinc-700 dark:text-zinc-200";
+      : "text-zinc-700 dark:text-zinc-600";
   const amountCardExtras = isOverdue
     ? "border-red-500 bg-red-50 dark:border-red-400 dark:bg-red-900/20"
     : "";
