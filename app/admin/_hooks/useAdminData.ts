@@ -71,7 +71,7 @@ export type ComplaintSummary = {
   created_at?: { toDate?: () => Date };
 };
 
-type PropertySummary = {
+export type PropertySummary = {
   id: string;
   owner_uid?: RefLike;
   property_id?: string;
@@ -119,6 +119,7 @@ export type BillingLedgerSummary = {
   property_id?: RefLike;
   month_year?: string;
   payment_status?: string;
+  paid_at?: { toDate?: () => Date };
   prev_meter_reading?: number;
   current_meter_reading?: number;
   units_consumed?: number;
@@ -581,8 +582,7 @@ export function useAdminDashboardData() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-secret":
-            process.env.NEXT_PUBLIC_ADMIN_API_SECRET || "",
+          "x-admin-secret": process.env.NEXT_PUBLIC_ADMIN_API_SECRET || "",
         },
         body: JSON.stringify({
           title: "Meter Update",
@@ -596,7 +596,10 @@ export function useAdminDashboardData() {
       });
 
       if (!response.ok) {
-        console.error("Failed to send meter update notification:", response.statusText);
+        console.error(
+          "Failed to send meter update notification:",
+          response.statusText,
+        );
       }
     } catch (error) {
       console.error("Error sending meter update notification:", error);
@@ -863,6 +866,77 @@ export function useAdminDashboardData() {
     await loadData();
   };
 
+  const markPaymentAsPaid = async (
+    ledgerId: string,
+    paymentMethod: "online" | "offline" = "offline",
+  ) => {
+    try {
+      const ledgerRef = doc(db, "billing_ledger", ledgerId);
+      const snapshot = await getDoc(ledgerRef);
+      if (!snapshot.exists()) {
+        throw new Error("Ledger not found");
+      }
+
+      const ledger = snapshot.data() as BillingLedgerSummary;
+      const propertyId = getRefId(ledger.property_id);
+      if (!propertyId) {
+        throw new Error("Property not found");
+      }
+
+      // Update the ledger to mark as paid
+      await updateDoc(ledgerRef, {
+        payment_status: "paid",
+        paid_at: serverTimestamp(),
+        payment_method: paymentMethod,
+        updated_at: serverTimestamp(),
+      });
+
+      // Get all tenants for this property to send notifications
+      const propertyTenantsQuery = query(
+        collection(db, "users"),
+        where("property_id", "==", doc(db, "properties", propertyId)),
+        where("role", "==", "tenant"),
+      );
+      const tenantDocs = await getDocs(propertyTenantsQuery);
+
+      const tenantUids = tenantDocs.docs.map((doc) => doc.id).filter(Boolean);
+
+      // Send notifications via the admin API
+      if (tenantUids.length > 0) {
+        const adminSecret = process.env.NEXT_PUBLIC_ADMIN_API_SECRET;
+        const notificationPayload = {
+          title: "Payment Received ✓",
+          body: `Your payment for ${ledger.month_year} has been marked as received. Thank you!`,
+          recipients: { tenantUids },
+          data: {
+            type: "payment_received",
+            ledgerId,
+            monthYear: ledger.month_year || "",
+          },
+        };
+
+        await fetch("/api/admin/send-notification", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-admin-secret": adminSecret || "",
+          },
+          body: JSON.stringify(notificationPayload),
+        });
+      }
+
+      await loadData();
+      return {
+        success: true,
+        message: "Payment marked as paid and notification sent",
+      };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to mark payment";
+      return { success: false, message: errorMessage };
+    }
+  };
+
   const adminName =
     (profile?.full_name as string | undefined) ||
     (profile?.name as string | undefined) ||
@@ -895,5 +969,6 @@ export function useAdminDashboardData() {
     deleteTenant,
     updateComplaintStatus,
     updateSettings,
+    markPaymentAsPaid,
   };
 }

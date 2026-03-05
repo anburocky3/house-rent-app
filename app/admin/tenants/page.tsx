@@ -89,7 +89,7 @@ export default function AdminTenantsPage() {
     useState<TenantDocument[]>([]);
   const [saving, setSaving] = useState(false);
   const [deletingUid, setDeletingUid] = useState("");
-  const [isFormOpen, setIsFormOpen] = useState(true);
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   const onPickProfilePicture = (event: ChangeEvent<HTMLInputElement>) => {
     setProfilePictureFile(event.target.files?.[0] || null);
