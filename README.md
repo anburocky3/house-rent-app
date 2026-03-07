@@ -1,117 +1,184 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# House Rent App
 
-## Getting Started
+House rent management app for tenant and owners. Runs on web, android, iOS, etc.
 
-First, run the development server:
+[![Stars](https://img.shields.io/github/stars/anburocky3/house-rent-app)](https://github.com/anburocky3/house-rent-app)
+[![Forks](https://img.shields.io/github/forks/anburocky3/house-rent-app)](https://github.com/anburocky3/house-rent-app)
+[![GitHub license](https://img.shields.io/github/license/anburocky3/house-rent-app)](https://github.com/anburocky3/house-rent-app)
+![Anbuselvan Rocky Twitter](https://img.shields.io/twitter/url?style=social&url=https%3A%2F%2Fgithub.com%2Fanburocky3%2Fhouse-rent-app)
+[![Support Server](https://img.shields.io/discord/742347296091537448.svg?label=Discord&logo=Discord&colorB=7289da)](https://discord.gg/6ktMR65YMy)
+[![Cyberdude youtube](https://img.shields.io/youtube/channel/subscribers/UCteUj8bL1ppZcS70UCWrVfw?style=social)](https://www.youtube.com/c/cyberdudenetworks)
+
+![House Rent app](docs/screenshots/banner.png)
+
+It supports admin and tenant workflows for:
+
+- property management
+- tenant management
+- monthly billing and payment tracking
+- complaints
+- web push notifications
+
+## Tech Stack
+
+- Next.js (App Router)
+- TypeScript
+- Firebase (Firestore, Auth, FCM)
+- Tailwind CSS
+- Vercel (deployment and cron)
+
+## Features
+
+- Admin dashboard for properties, tenants, complaints, notifications, and settings
+- Tenant dashboard for payment status, history, and account info
+- Billing ledger tracking per property
+- Meter-based unit consumption calculation
+- Web push notifications (FCM)
+- Month-end and month-start reminder automation using Vercel cron
+
+## Project Structure
+
+Key directories:
+
+- `app/` - pages, API routes, UI components, and hooks
+- `lib/` - reusable server/client utilities
+- `scripts/` - migration and seed scripts
+- `types/` - shared TypeScript types
+- `public/` - static assets and service worker
+
+## Prerequisites
+
+- Node.js 20+ (or Bun)
+- Firebase project (Firestore + FCM enabled)
+- Service account credentials for server-side Firebase Admin actions
+
+## Quick Start
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Copy environment template and fill values:
+
+```bash
+cp .env.example .env.local
+```
+
+3. Start development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. Open:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+`http://localhost:3000`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Environment Variables
 
-## Learn More
+Use `.env.example` as your source of truth. Important variables include:
 
-To learn more about Next.js, take a look at the following resources:
+- `NEXT_PUBLIC_FIREBASE_API_KEY`
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+- `NEXT_PUBLIC_FIREBASE_APP_ID`
+- `NEXT_PUBLIC_FIREBASE_VAPID_KEY`
+- `FIREBASE_SERVICE_ACCOUNT_JSON` or `FIREBASE_SERVICE_ACCOUNT_PATH`
+- `ADMIN_API_SECRET`
+- `NOTIFICATION_INTERNAL_API_KEY` (optional)
+- `CRON_SECRET`
+- `BLOB_READ_WRITE_TOKEN`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `npm run dev` - Start local dev server
+- `npm run build` - Create production build
+- `npm run start` - Run production build locally
+- `npm run lint` - Run ESLint
+- `npm run migrate` - Migrate Firestore data
+- `npm run migrate:fresh` - Fresh migration flow
+- `npm run seed:firestore` - Seed Firestore with demo data
 
-## Deploy on Vercel
+## Notifications Setup (FCM)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. In Firebase Console, open Cloud Messaging.
+2. Create a Web Push certificate and copy VAPID public key.
+3. Set `NEXT_PUBLIC_FIREBASE_VAPID_KEY` in `.env.local`.
+4. Sign in to the app and enable notifications from the UI.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Token sync writes `fcmToken` and device metadata to the user profile for easier device identification.
 
-## Push Notifications (Firebase Cloud Messaging)
-
-This app is integrated with Firebase Cloud Messaging (FCM) for web push notifications.
-
-### 1) Configure Firebase Cloud Messaging
-
-- In Firebase Console, open your project → Cloud Messaging.
-- Create a Web Push certificate and copy the VAPID public key.
-- Add these values in `.env.local`:
-
-```bash
-NEXT_PUBLIC_FIREBASE_VAPID_KEY=your_web_push_vapid_public_key
-FIREBASE_SERVICE_ACCOUNT_JSON={"type":"service_account",...}
-# or use FIREBASE_SERVICE_ACCOUNT_PATH instead
-NOTIFICATION_INTERNAL_API_KEY=optional_secret_for_send_api
-```
-
-### 2) Enable notifications in app
-
-- Sign in as admin or tenant.
-- Click **Enable notifications** from the in-app notification card.
-- This stores `fcmToken` on the matched user profile document.
-
-### 3) Send a test notification
-
-Use the API route:
+### Send a test notification
 
 ```bash
 curl -X POST http://localhost:3000/api/notifications/send \
-	-H "Content-Type: application/json" \
-	-H "x-notification-key: YOUR_NOTIFICATION_INTERNAL_API_KEY" \
-	-d '{
-		"targetRole": "tenant",
-		"title": "Meter reading reminder",
-		"body": "Please check your updated electricity units.",
-		"data": { "click_action": "/tenant" }
-	}'
+  -H "Content-Type: application/json" \
+  -H "x-notification-key: YOUR_NOTIFICATION_INTERNAL_API_KEY" \
+  -d '{
+    "targetRole": "tenant",
+    "title": "Meter reading reminder",
+    "body": "Please check your updated electricity units.",
+    "data": { "click_action": "/tenant" }
+  }'
 ```
 
-## Automatic Unit Calculation via Initial Meter Reading
+## Billing Notes
 
-To reduce manual effort when calculating electricity consumption, each property now stores an *initial meter reading*.
+- Ledger entries are created when admin updates meter readings for a property.
+- Current meter reading and previous reading are used to calculate consumed units and electricity totals.
+- Payment status is tracked in `billing_ledger`.
 
-- When creating a property (either via UI or seeding), you can specify the current meter value.
-- Subsequent monthly entries use this reading as the "previous" value for the first billing run.
-- Admin dashboard automatically computes units consumed based on the last reading or the initial value.
+## Cron Reminders (Vercel)
 
-This lets you simply enter the current meter figure and have the app figure out the units for all properties.
+Configured in `vercel.json` for `/api/cron/monthly-reminders`:
 
-## Vercel Cron: Month-End Rent Reminders
+- `30 4 1-3 * *` (first 3 days of month)
+- `30 4 25-31 * *` (last week window, with in-route date checks)
 
-This project includes a daily cron endpoint at `/api/cron/monthly-reminders`.
+The route sends:
 
-### What it does
+- tenant reminders for pending rent
+- admin reminders to enter meter readings where required
 
-- Runs every day (configured in `vercel.json`).
-- Sends notifications only in this window:
-  - **Last 3 days of month** (29/30/31 depending on month), and
-  - **First 3 days of month** (1/2/3).
-- If tenant payment is still pending:
-  1.  Sends **"Rent due online"** notification to tenants.
-  2.  Sends **"Enter meter reading"** notification to admins (when pending ledger has no current meter reading).
+Set `CRON_SECRET` in Vercel and send it as Bearer token when invoking manually.
 
-### Setup steps in Vercel
+## Deployment
 
-1. Push this repo with `vercel.json`.
-2. In Vercel Project → Settings → Environment Variables, add:
-   - `CRON_SECRET` (create it using `openssl rand -hex 32`)
-   - `FIREBASE_SERVICE_ACCOUNT_JSON` (recommended) or `FIREBASE_SERVICE_ACCOUNT_PATH`
-   - All Firebase public vars and `NEXT_PUBLIC_FIREBASE_VAPID_KEY`
-3. Redeploy.
-4. In Vercel Project → Cron Jobs, confirm:
-   - Path: `/api/cron/monthly-reminders`
-   - Schedule: `0 3 * * *` (UTC, daily)
+Recommended: Vercel.
 
-### Time zone note
+1. Import repo in Vercel.
+2. Add all required environment variables.
+3. Deploy.
+4. Verify cron jobs are active.
 
-- Vercel cron uses **UTC**.
-- Current schedule `0 3 * * *` = **08:30 AM IST**.
-- If you want a different local time, adjust the cron expression in `vercel.json`.
+## Security Notes
+
+- Never commit real service account JSON files.
+- Use environment variables for secrets.
+- Rotate `ADMIN_API_SECRET`, `NOTIFICATION_INTERNAL_API_KEY`, and `CRON_SECRET` regularly.
+
+## Author
+
+- Project Author: [Mr. Anbuselvan Annamalai](https://anbuselvan-annamalai.com)
+
+## License: [MIT](./LICENSE)
+
+## Contributing
+
+1. Create a feature branch.
+2. Make focused changes.
+3. Run lint and local checks.
+4. Open a pull request with clear description.
+
+## Support
+
+For setup and deployment issues, create an issue in this repository with:
+
+- expected behavior
+- actual behavior
+- steps to reproduce
+- environment details
