@@ -7,6 +7,7 @@ import { auth, db } from "../../../firebaseConfig";
 import type { Role, UserProfile } from "../../../types";
 import {
   createUserWithEmailAndPassword,
+  signOut,
   signInWithEmailAndPassword,
 } from "firebase/auth";
 import {
@@ -161,8 +162,6 @@ export default function RoleLoginForm({
         ? `${normalizedPhone}@tenant.house-rent.local`
         : "";
 
-      const existingProfile = await ensureProfileExists(role, phoneNumber);
-
       try {
         userCredential = await signInWithEmailAndPassword(
           auth,
@@ -190,6 +189,7 @@ export default function RoleLoginForm({
       }
 
       const { user } = userCredential;
+      const existingProfile = await ensureProfileExists(role, phoneNumber);
       const resolvedRole = await syncExistingProfileWithAuth(
         existingProfile.id,
         user.uid,
@@ -200,6 +200,15 @@ export default function RoleLoginForm({
 
       router.replace(resolvedRole === "admin" ? "/admin" : "/tenant");
     } catch (err) {
+      // If profile validation fails after auth, sign out to avoid partial session.
+      if (auth.currentUser) {
+        try {
+          await signOut(auth);
+        } catch {
+          // Ignore sign-out errors in login error path.
+        }
+      }
+
       let message = "Unable to sign in. Please try again.";
 
       if (err && typeof err === "object" && "code" in err) {
