@@ -48,9 +48,7 @@ export default function TenantHistoryPage() {
       return "Around 3rd of every month";
     }
 
-    const dueMonthIndex = (monthIndex + 1) % 12;
-    const dueYear = monthIndex === 11 ? parsedYear + 1 : parsedYear;
-    return `03 ${monthNames[dueMonthIndex]} ${dueYear}`;
+    return `03 ${monthNames[monthIndex]} ${parsedYear}`;
   };
 
   const history = [...ledgers].sort((first, second) => {

@@ -39,11 +39,15 @@ export default function TenantDashboard() {
   const rentAmount = propertyDetails?.rent_amount ?? 0;
   const waterCost = propertyDetails?.water_charge ?? 0;
   const unitPrice = propertyDetails?.electricity_rate ?? 0;
-  const initialMeterReading = propertyDetails?.initial_meter_reading ?? 0;
   const currentMeterReading = pendingLedger?.current_meter_reading ?? 0;
-  const consumedUnits =
-    currentMeterReading > 0 ? currentMeterReading - initialMeterReading : 0;
-  const currentUnitCost = consumedUnits > 0 ? consumedUnits * unitPrice : 0;
+  const currentMonthUnits = pendingLedger?.units_consumed ?? 0;
+  const currentUnitCost =
+    typeof pendingLedger?.electricity_total === "number" &&
+    pendingLedger.electricity_total > 0
+      ? pendingLedger.electricity_total
+      : currentMonthUnits > 0
+        ? currentMonthUnits * unitPrice
+        : 0;
   const hasCurrentReading =
     typeof pendingLedger?.current_meter_reading === "number" &&
     pendingLedger.current_meter_reading > 0;
@@ -89,16 +93,21 @@ export default function TenantDashboard() {
       return `${overdueDays} day${overdueDays === 1 ? "" : "s"} overdue`;
     };
 
-    if (!monthYear) {
-      const fallbackDueDate =
-        today.getDate() <= 3
-          ? new Date(today.getFullYear(), today.getMonth(), 3)
-          : new Date(today.getFullYear(), today.getMonth() + 1, 3);
+    const buildFallback = () => {
+      const fallbackDueDate = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        3,
+      );
 
       return {
         label: "Due around 3rd of every month",
         daysText: buildDaysText(fallbackDueDate),
       };
+    };
+
+    if (!monthYear) {
+      return buildFallback();
     }
 
     const [monthName, yearValue] = monthYear.split(" ");
@@ -106,23 +115,13 @@ export default function TenantDashboard() {
     const parsedYear = Number(yearValue);
 
     if (monthIndex < 0 || Number.isNaN(parsedYear)) {
-      const fallbackDueDate =
-        today.getDate() <= 3
-          ? new Date(today.getFullYear(), today.getMonth(), 3)
-          : new Date(today.getFullYear(), today.getMonth() + 1, 3);
-
-      return {
-        label: "Due around 3rd of every month",
-        daysText: buildDaysText(fallbackDueDate),
-      };
+      return buildFallback();
     }
 
-    const dueMonthIndex = (monthIndex + 1) % 12;
-    const dueYear = monthIndex === 11 ? parsedYear + 1 : parsedYear;
-    const dueDate = new Date(dueYear, dueMonthIndex, 3);
+    const dueDate = new Date(parsedYear, monthIndex, 3);
 
     return {
-      label: `Due on 03 ${monthNames[dueMonthIndex]} ${dueYear}`,
+      label: `Due on 03 ${monthNames[monthIndex]} ${parsedYear}`,
       daysText: buildDaysText(dueDate),
     };
   };
@@ -137,17 +136,6 @@ export default function TenantDashboard() {
   const ownerUpiId =
     ownerProfile?.upi_id || process.env.NEXT_PUBLIC_OWNER_UPI_ID || "";
 
-  // when we're outside the window, how many days until 1st of next available window
-  const daysUntilWindow = !isUpiPaymentWindow
-    ? today.getDate() > 3
-      ? Math.ceil(
-          (new Date(today.getFullYear(), today.getMonth() + 1, 1).getTime() -
-            today.getTime()) /
-            (1000 * 60 * 60 * 24),
-        )
-      : 1 - today.getDate()
-    : 0;
-
   // visual helpers
   const isOverdue = dueDateInfo.daysText.includes("overdue");
   const dueTextClass = isOverdue
@@ -158,6 +146,11 @@ export default function TenantDashboard() {
   const amountCardExtras = isOverdue
     ? "border-red-500 bg-red-50 dark:border-red-400 dark:bg-red-900/20"
     : "";
+  const canPayWithUpi = Boolean(ownerUpiId && pendingLedger);
+  const upiButtonLabel = isOverdue ? "Pay overdue with UPI" : "Pay with UPI";
+  const lateFeeNotice = isOverdue
+    ? "Late payment agreement: if the bill is not paid by the 5rd of the month, a daily late fee or interest may apply until the full amount is cleared."
+    : "Payment agreement: rent should be paid on or before the 3rd of each month to avoid any late fee or interest.";
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-zinc-100 px-4 pb-24 pt-6 font-sans text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
@@ -174,13 +167,26 @@ export default function TenantDashboard() {
           </p>
         </section>
 
+        <section className="rounded-3xl border border-amber-300 bg-amber-50 p-4 shadow-sm dark:border-amber-800 dark:bg-amber-950/20">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-800 dark:text-amber-300">
+            Payment agreement
+          </p>
+          <p className="mt-2 text-sm font-medium text-amber-950 dark:text-amber-100">
+            {lateFeeNotice}
+          </p>
+          <p className="mt-2 text-xs font-medium text-amber-800 dark:text-amber-300">
+            Overdue bills remain payable from this screen until the owner marks
+            them as received.
+          </p>
+        </section>
+
         <section
           className={`rounded-3xl border p-5 text-zinc-50 shadow-lg dark:text-zinc-950 ${amountCardExtras} border-zinc-900 bg-zinc-950 dark:border-zinc-100 dark:bg-zinc-50`}
         >
           <p className="text-xs font-semibold uppercase tracking-[0.2em] opacity-80">
             Amount Owed
           </p>
-          <p className="mt-3 text-5xl font-extrabold leading-none sm:text-6xl">
+          <p className="mt-3 text-5xl font-extrabold leading-none sm:text-6xl dark:text-zinc-950">
             {formatINR.format(amountOwed)}
           </p>
           <p
@@ -196,14 +202,14 @@ export default function TenantDashboard() {
                   UPI ID:
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-sm text-zinc-900 dark:text-zinc-500">
+                  <span className="font-mono text-sm text-zinc-600 dark:text-zinc-500">
                     {ownerUpiId || "-"}
                   </span>
                   {ownerUpiId ? (
                     <CopyValueButton
                       value={ownerUpiId}
                       label="Owner UPI ID"
-                      className="bg-zinc-600 text-zinc-50 hover:bg-zinc-700"
+                      className="bg-zinc-600 text-zinc-100 hover:bg-zinc-700"
                     />
                   ) : null}
                 </div>
@@ -220,7 +226,7 @@ export default function TenantDashboard() {
           )}
 
           <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {isUpiPaymentWindow && ownerUpiId ? (
+            {canPayWithUpi ? (
               <button
                 type="button"
                 onClick={() => {
@@ -237,7 +243,7 @@ export default function TenantDashboard() {
                 }}
                 className="inline-flex min-h-12 items-center justify-center rounded-xl bg-zinc-50 px-4 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200 hover:scale-[1.02] active:scale-95 dark:bg-zinc-950 dark:text-zinc-50 dark:hover:bg-zinc-800"
               >
-                Pay with UPI
+                {upiButtonLabel}
               </button>
             ) : (
               <button
@@ -261,12 +267,9 @@ export default function TenantDashboard() {
 
           {!isUpiPaymentWindow ? (
             <p className="mt-2 text-xs font-semibold opacity-80">
-              UPI payment window is from 1st to 3rd of each month.
-              {daysUntilWindow > 0
-                ? ` (opens in ${daysUntilWindow} day${
-                    daysUntilWindow > 1 ? "s" : ""
-                  })`
-                : ""}
+              {isOverdue
+                ? "This bill is overdue. You can still pay now."
+                : "UPI payment window is from 1st to 3rd of each month."}
             </p>
           ) : null}
         </section>
@@ -306,7 +309,7 @@ export default function TenantDashboard() {
               {
                 title: "Current unit cost",
                 value: formatINR.format(currentUnitCost),
-                detail: `${consumedUnits} units × ${formatINR.format(unitPrice)} / unit`,
+                detail: `${currentMonthUnits} units × ${formatINR.format(unitPrice)} / unit`,
               },
             ].map((card) => (
               <article
@@ -347,7 +350,7 @@ export default function TenantDashboard() {
                   Units consumed
                 </p>
                 <p className="mt-2 text-2xl font-extrabold text-zinc-950 dark:text-zinc-50">
-                  {consumedUnits > 0 ? consumedUnits : "—"}
+                  {currentMonthUnits > 0 ? currentMonthUnits : "—"}
                 </p>
                 <p className="mt-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
                   This month
