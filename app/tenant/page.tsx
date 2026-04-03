@@ -174,10 +174,6 @@ export default function TenantDashboard() {
           <p className="mt-2 text-sm font-medium text-amber-950 dark:text-amber-100">
             {lateFeeNotice}
           </p>
-          <p className="mt-2 text-xs font-medium text-amber-800 dark:text-amber-300">
-            Overdue bills remain payable from this screen until the owner marks
-            them as received.
-          </p>
         </section>
 
         <section
@@ -198,25 +194,25 @@ export default function TenantDashboard() {
           {isUpiPaymentWindow && (
             <div className="mt-3 flex flex-col items-start gap-2 transition-opacity duration-300">
               <div className="flex items-center space-x-2">
-                <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-600">
+                <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-600">
                   UPI ID:
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-sm text-zinc-600 dark:text-zinc-500">
+                  <span className="font-mono text-sm text-white dark:text-zinc-500">
                     {ownerUpiId || "-"}
                   </span>
                   {ownerUpiId ? (
                     <CopyValueButton
                       value={ownerUpiId}
                       label="Owner UPI ID"
-                      className="bg-zinc-600 text-zinc-100 hover:bg-zinc-700"
+                      className="bg-zinc-800 dark:bg-zinc-600 text-zinc-100!  hover:bg-zinc-700"
                     />
                   ) : null}
                 </div>
               </div>
 
               {upiDaysLeft !== null && (
-                <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
                   {upiDaysLeft === 0
                     ? "Last day to pay"
                     : `Ends in ${upiDaysLeft} day${upiDaysLeft > 1 ? "s" : ""}`}
@@ -457,10 +453,10 @@ export default function TenantDashboard() {
                             >
                               {tenantPhone}
                             </a>
-                            <CopyValueButton
+                            {/* <CopyValueButton
                               value={tenantPhone}
                               label={`${displayName} phone number`}
-                            />
+                            /> */}
                           </>
                         ) : (
                           <span>-</span>
@@ -480,12 +476,12 @@ export default function TenantDashboard() {
                         <span className="min-w-0 flex-1 truncate">
                           {tenantAddress || "-"}
                         </span>
-                        {tenantAddress ? (
+                        {/* {tenantAddress ? (
                           <CopyValueButton
                             value={tenantAddress}
                             label={`${displayName} address`}
                           />
-                        ) : null}
+                        ) : null} */}
                       </div>
                     </div>
                   </article>

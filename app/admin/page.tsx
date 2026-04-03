@@ -5,6 +5,7 @@ import LogoutButton from "../components/LogoutButton";
 import PushNotificationSetup from "../components/PushNotificationSetup";
 import AdminBottomNav from "./_components/AdminBottomNav";
 import { useAdminDashboardData } from "./_hooks/useAdminData";
+import CopyValueButton from "../components/CopyValueButton";
 
 const getRefId = (value?: { id?: string } | string) => {
   if (!value) {
@@ -45,6 +46,10 @@ export default function AdminDashboard() {
     daysLeft === 0
       ? "Today is month end."
       : `${daysLeft + 1} day${daysLeft === 0 ? "" : "s"} left for month end.`;
+  const currentMonthYear = today.toLocaleString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
 
   if (isCheckingAccess || !isAllowed) {
     return (
@@ -137,6 +142,9 @@ export default function AdminDashboard() {
               {properties.map((property) => {
                 const propertyId = property.id;
                 const latestLedger = latestLedgerByProperty[propertyId];
+                const hasCurrentMonthReading =
+                  latestLedger?.month_year === currentMonthYear &&
+                  typeof latestLedger?.current_meter_reading === "number";
                 const value =
                   unitInputs[propertyId] ??
                   (latestLedger?.current_meter_reading !== undefined
@@ -201,7 +209,15 @@ export default function AdminDashboard() {
                     </div>
                     <p className="mt-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
                       Last saved unit:{" "}
-                      {latestLedger?.current_meter_reading ?? "-"}
+                      {latestLedger?.current_meter_reading ?? "-"}{" "}
+                      {hasCurrentMonthReading ? (
+                        <>
+                          |{" "}
+                          <span className="font-semibold text-emerald-700 dark:text-emerald-300">
+                            Updated for {currentMonthYear}.
+                          </span>
+                        </>
+                      ) : null}
                     </p>
                   </div>
                 );
@@ -242,10 +258,17 @@ export default function AdminDashboard() {
                     </div>
                     <a
                       href={`tel:${tenant.phone_number}`}
-                      className="mt-1 text-sm font-medium text-zinc-700 dark:text-zinc-500"
+                      className="mt-1 text-sm font-medium text-zinc-700 dark:text-zinc-500 mr-2"
                     >
                       📞 {tenant.phone_number || "-"}
                     </a>
+                    {tenant.phone_number ? (
+                      <CopyValueButton
+                        value={tenant.phone_number}
+                        label={`${tenant.phone_number} phone number`}
+                        className="bg-zinc-600 text-zinc-100!  hover:bg-zinc-700"
+                      />
+                    ) : null}
                   </article>
                 );
               })}

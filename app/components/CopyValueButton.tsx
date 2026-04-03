@@ -39,7 +39,7 @@ export default function CopyValueButton({
       disabled={!value}
       aria-label={`Copy ${label}`}
       title={`Copy ${label}`}
-      className={`ml-auto inline-flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-300 text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800 ${className || ""}`}
+      className={`ml-auto inline-flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-600  text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800 ${className || ""}`}
     >
       {isCopied ? (
         <svg
