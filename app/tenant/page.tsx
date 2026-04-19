@@ -39,7 +39,6 @@ export default function TenantDashboard() {
   const rentAmount = propertyDetails?.rent_amount ?? 0;
   const waterCost = propertyDetails?.water_charge ?? 0;
   const unitPrice = propertyDetails?.electricity_rate ?? 0;
-  const currentMeterReading = pendingLedger?.current_meter_reading ?? 0;
   const currentMonthUnits = pendingLedger?.units_consumed ?? 0;
   const currentUnitCost =
     typeof pendingLedger?.electricity_total === "number" &&
@@ -54,7 +53,33 @@ export default function TenantDashboard() {
   const hasElectricityTotal =
     typeof pendingLedger?.electricity_total === "number" &&
     pendingLedger.electricity_total > 0;
-  const isElectricityBillNotAdded = !hasCurrentReading && !hasElectricityTotal;
+  const isElectricityBillNotAdded =
+    Boolean(pendingLedger) && !hasCurrentReading && !hasElectricityTotal;
+
+  const latestLedger = [...ledgers].sort(
+    (first, second) =>
+      (second.updated_at?.toDate?.()?.getTime() ?? 0) -
+      (first.updated_at?.toDate?.()?.getTime() ?? 0),
+  )[0];
+  const latestLedgerWithReading = [...ledgers]
+    .filter(
+      (ledger) =>
+        typeof ledger.current_meter_reading === "number" &&
+        Number.isFinite(ledger.current_meter_reading),
+    )
+    .sort(
+      (first, second) =>
+        (second.updated_at?.toDate?.()?.getTime() ?? 0) -
+        (first.updated_at?.toDate?.()?.getTime() ?? 0),
+    )[0];
+  const currentMeterReading =
+    pendingLedger?.current_meter_reading ??
+    latestLedgerWithReading?.current_meter_reading ??
+    propertyDetails?.initial_meter_reading;
+  const hasPendingLedger = Boolean(pendingLedger);
+  const isLatestLedgerPaid =
+    !hasPendingLedger &&
+    (latestLedger?.payment_status || "").toLowerCase() === "paid";
 
   const monthNames = [
     "January",
@@ -71,63 +96,96 @@ export default function TenantDashboard() {
     "December",
   ];
 
-  const getDueDateInfo = (monthYear?: string) => {
+  const toStartOfDay = (value: Date) => {
+    const next = new Date(value);
+    next.setHours(0, 0, 0, 0);
+    return next;
+  };
+
+  const getDayCountFromDate = (targetDate: Date) => {
+    const todayStart = toStartOfDay(new Date());
+    const dueStart = toStartOfDay(targetDate);
+    const differenceInMs = dueStart.getTime() - todayStart.getTime();
+    return Math.ceil(differenceInMs / (1000 * 60 * 60 * 24));
+  };
+
+  const getDaysTextFromDayCount = (dayCount: number) => {
+    if (dayCount > 0) {
+      return `${dayCount} day${dayCount === 1 ? "" : "s"} left`;
+    }
+
+    if (dayCount === 0) {
+      return "Due today";
+    }
+
+    const overdueDays = Math.abs(dayCount);
+    return `${overdueDays} day${overdueDays === 1 ? "" : "s"} overdue`;
+  };
+
+  const parseDueDateFromMonthYear = (monthYear?: string) => {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const buildDaysText = (dueDate: Date) => {
-      const due = new Date(dueDate);
-      due.setHours(0, 0, 0, 0);
-      const differenceInMs = due.getTime() - today.getTime();
-      const dayCount = Math.ceil(differenceInMs / (1000 * 60 * 60 * 24));
-
-      if (dayCount > 0) {
-        return `${dayCount} day${dayCount === 1 ? "" : "s"} left`;
-      }
-
-      if (dayCount === 0) {
-        return "Due today";
-      }
-
-      const overdueDays = Math.abs(dayCount);
-      return `${overdueDays} day${overdueDays === 1 ? "" : "s"} overdue`;
-    };
-
-    const buildFallback = () => {
-      const fallbackDueDate = new Date(
-        today.getFullYear(),
-        today.getMonth(),
-        3,
-      );
-
-      return {
-        label: "Due around 3rd of every month",
-        daysText: buildDaysText(fallbackDueDate),
-      };
-    };
-
     if (!monthYear) {
-      return buildFallback();
+      return new Date(today.getFullYear(), today.getMonth(), 3);
     }
 
     const [monthName, yearValue] = monthYear.split(" ");
     const monthIndex = monthNames.findIndex((item) => item === monthName);
     const parsedYear = Number(yearValue);
-
     if (monthIndex < 0 || Number.isNaN(parsedYear)) {
-      return buildFallback();
+      return new Date(today.getFullYear(), today.getMonth(), 3);
     }
 
-    const dueDate = new Date(parsedYear, monthIndex, 3);
+    return new Date(parsedYear, monthIndex, 3);
+  };
 
+  const getUpcomingMonthlyDue = () => {
+    const today = toStartOfDay(new Date());
+    let dueDate = new Date(today.getFullYear(), today.getMonth(), 3);
+
+    if (today.getTime() > dueDate.getTime()) {
+      dueDate = new Date(today.getFullYear(), today.getMonth() + 1, 3);
+    }
+
+    const dayCount = getDayCountFromDate(dueDate);
     return {
-      label: `Due on 03 ${monthNames[monthIndex]} ${parsedYear}`,
-      daysText: buildDaysText(dueDate),
+      label: `Upcoming due on 03 ${monthNames[dueDate.getMonth()]} ${dueDate.getFullYear()}`,
+      daysText: getDaysTextFromDayCount(dayCount),
     };
   };
 
-  const dueDateInfo = getDueDateInfo(pendingLedger?.month_year);
-  const amountOwed = rentAmount + waterCost + currentUnitCost;
+  const getDueDateInfo = (monthYear?: string) => {
+    const dueDate = parseDueDateFromMonthYear(monthYear);
+    const dayCount = getDayCountFromDate(dueDate);
+
+    return {
+      label: `Due on 03 ${monthNames[dueDate.getMonth()]} ${dueDate.getFullYear()}`,
+      daysText: getDaysTextFromDayCount(dayCount),
+      dayCount,
+    };
+  };
+
+  const pendingDueDate = hasPendingLedger
+    ? parseDueDateFromMonthYear(pendingLedger?.month_year)
+    : null;
+  const pendingDueDayCount = pendingDueDate
+    ? getDayCountFromDate(pendingDueDate)
+    : null;
+  const shouldShowPaymentAgreement =
+    hasPendingLedger && pendingDueDayCount !== null && pendingDueDayCount <= 0;
+  const upcomingMonthlyDue = getUpcomingMonthlyDue();
+
+  const dueDateInfo = isLatestLedgerPaid
+    ? {
+        label: `Paid for ${latestLedger?.month_year || "current cycle"}`,
+        daysText: latestLedger?.paid_at?.toDate
+          ? `Paid on ${latestLedger.paid_at.toDate().toLocaleDateString()}`
+          : "Payment received",
+        dayCount: null,
+      }
+    : getDueDateInfo(pendingLedger?.month_year);
+  const amountOwed = hasPendingLedger
+    ? rentAmount + waterCost + currentUnitCost
+    : 0;
   const supportPhone =
     ownerProfile?.phone_number || ownerProfile?.emergency_contact?.phone;
   const today = new Date();
@@ -137,7 +195,10 @@ export default function TenantDashboard() {
     ownerProfile?.upi_id || process.env.NEXT_PUBLIC_OWNER_UPI_ID || "";
 
   // visual helpers
-  const isOverdue = dueDateInfo.daysText.includes("overdue");
+  const isOverdue =
+    hasPendingLedger && typeof dueDateInfo.dayCount === "number"
+      ? dueDateInfo.dayCount < 0
+      : false;
   const dueTextClass = isOverdue
     ? "text-red-600 dark:text-red-400"
     : dueDateInfo.daysText === "Due today"
@@ -146,11 +207,13 @@ export default function TenantDashboard() {
   const amountCardExtras = isOverdue
     ? "border-red-500 bg-red-50 dark:border-red-400 dark:bg-red-900/20"
     : "";
-  const canPayWithUpi = Boolean(ownerUpiId && pendingLedger);
+  const canPayWithUpi = Boolean(ownerUpiId && pendingLedger && amountOwed > 0);
   const upiButtonLabel = isOverdue ? "Pay overdue with UPI" : "Pay with UPI";
-  const lateFeeNotice = isOverdue
-    ? "Late payment agreement: if the bill is not paid by the 5rd of the month, a daily late fee or interest may apply until the full amount is cleared."
-    : "Payment agreement: rent should be paid on or before the 3rd of each month to avoid any late fee or interest.";
+  const lateFeeNotice = hasPendingLedger
+    ? isOverdue
+      ? "Late payment agreement: if the bill is not paid by the 5rd of the month, a daily late fee or interest may apply until the full amount is cleared."
+      : "Payment agreement: rent should be paid on or before the 3rd of each month to avoid any late fee or interest."
+    : "No pending rent due right now. The last billing cycle is already marked as paid in billing ledger.";
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-zinc-100 px-4 pb-24 pt-6 font-sans text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
@@ -167,14 +230,16 @@ export default function TenantDashboard() {
           </p>
         </section>
 
-        <section className="rounded-3xl border border-amber-300 bg-amber-50 p-4 shadow-sm dark:border-amber-800 dark:bg-amber-950/20">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-800 dark:text-amber-300">
-            Payment agreement
-          </p>
-          <p className="mt-2 text-sm font-medium text-amber-950 dark:text-amber-100">
-            {lateFeeNotice}
-          </p>
-        </section>
+        {shouldShowPaymentAgreement ? (
+          <section className="rounded-3xl border border-amber-300 bg-amber-50 p-4 shadow-sm dark:border-amber-800 dark:bg-amber-950/20">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-800 dark:text-amber-300">
+              Payment agreement
+            </p>
+            <p className="mt-2 text-sm font-medium text-amber-950 dark:text-amber-100">
+              {lateFeeNotice}
+            </p>
+          </section>
+        ) : null}
 
         <section
           className={`rounded-3xl border p-5 text-zinc-50 shadow-lg dark:text-zinc-950 ${amountCardExtras} border-zinc-900 bg-zinc-950 dark:border-zinc-100 dark:bg-zinc-50`}
@@ -191,6 +256,12 @@ export default function TenantDashboard() {
             <span className="font-semibold ">{dueDateInfo.label}</span>{" "}
             <span>({dueDateInfo.daysText})</span>
           </p>
+          {!hasPendingLedger ? (
+            <p className="mt-1 text-xs text-zinc-300 dark:text-zinc-700">
+              <span className="font-semibold">{upcomingMonthlyDue.label}</span>{" "}
+              <span>({upcomingMonthlyDue.daysText})</span>
+            </p>
+          ) : null}
           {isUpiPaymentWindow && (
             <div className="mt-3 flex flex-col items-start gap-2 transition-opacity duration-300">
               <div className="flex items-center space-x-2">
@@ -263,9 +334,11 @@ export default function TenantDashboard() {
 
           {!isUpiPaymentWindow ? (
             <p className="mt-2 text-xs font-semibold opacity-80">
-              {isOverdue
-                ? "This bill is overdue. You can still pay now."
-                : "UPI payment window is from 1st to 3rd of each month."}
+              {!hasPendingLedger
+                ? "No pending dues at the moment."
+                : isOverdue
+                  ? "This bill is overdue. You can still pay now."
+                  : "UPI payment window is from 1st to 3rd of each month."}
             </p>
           ) : null}
         </section>
@@ -335,7 +408,9 @@ export default function TenantDashboard() {
                   Current reading
                 </p>
                 <p className="mt-2 text-2xl font-extrabold text-zinc-950 dark:text-zinc-50">
-                  {currentMeterReading > 0 ? currentMeterReading : "—"}
+                  {typeof currentMeterReading === "number"
+                    ? currentMeterReading
+                    : "—"}
                 </p>
                 <p className="mt-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
                   Units

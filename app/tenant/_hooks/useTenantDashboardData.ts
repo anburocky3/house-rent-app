@@ -40,6 +40,8 @@ export type TenantProfile = {
     version?: string;
   };
   is_primary_tenant?: boolean;
+  is_vacating?: boolean;
+  vacating_at?: { toDate?: () => Date } | Date | null;
   created_at?: { toDate?: () => Date };
   tenant_entered?: { toDate?: () => Date };
   property_id?: { id?: string };
@@ -180,7 +182,9 @@ export function useTenantDashboardData() {
         }));
         const pending =
           allLedgers
-            .filter((item) => item.payment_status === "pending")
+            .filter(
+              (item) => (item.payment_status || "").toLowerCase() === "pending",
+            )
             .sort((first, second) => {
               const firstTime = first.updated_at?.toDate?.()?.getTime() || 0;
               const secondTime = second.updated_at?.toDate?.()?.getTime() || 0;
@@ -192,7 +196,27 @@ export function useTenantDashboardData() {
             uid: tenantDoc.id,
             ...(tenantDoc.data() as TenantProfile),
           }))
-          .filter((tenant) => tenant._deleted !== true)
+          .filter((tenant) => {
+            if (tenant._deleted === true) {
+              return false;
+            }
+
+            if (!tenant.is_vacating) {
+              return true;
+            }
+
+            const vacatingAt =
+              tenant.vacating_at instanceof Date
+                ? tenant.vacating_at
+                : tenant.vacating_at?.toDate?.() || null;
+
+            // Hide explicitly vacating/vacated tenants from tenant-facing team list.
+            if (!vacatingAt) {
+              return false;
+            }
+
+            return vacatingAt.getTime() > Date.now();
+          })
           .sort((first, second) => {
             if (first.is_primary_tenant && !second.is_primary_tenant) {
               return -1;

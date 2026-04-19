@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { ChangeEvent, FormEvent, SubmitEvent, useState } from "react";
+import { ChangeEvent, SubmitEvent, useState } from "react";
 import AdminBottomNav from "../_components/AdminBottomNav";
 import {
   type TenantDocument,
@@ -90,6 +90,8 @@ export default function AdminTenantsPage() {
   const [saving, setSaving] = useState(false);
   const [deletingUid, setDeletingUid] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isVacating, setIsVacating] = useState(false);
+  const [vacatingAt, setVacatingAt] = useState("");
 
   const onPickProfilePicture = (event: ChangeEvent<HTMLInputElement>) => {
     setProfilePictureFile(event.target.files?.[0] || null);
@@ -101,6 +103,36 @@ export default function AdminTenantsPage() {
 
   const onPickSupportingFiles = (event: ChangeEvent<HTMLInputElement>) => {
     setSupportingFiles(Array.from(event.target.files || []));
+  };
+
+  const toDateTimeInputValue = (
+    value?: { toDate?: () => Date } | Date | string | null,
+  ) => {
+    if (!value) {
+      return "";
+    }
+
+    if (typeof value === "string") {
+      const parsedFromString = new Date(value);
+      if (!Number.isNaN(parsedFromString.getTime())) {
+        const localTime = new Date(
+          parsedFromString.getTime() -
+            parsedFromString.getTimezoneOffset() * 60000,
+        );
+        return localTime.toISOString().slice(0, 16);
+      }
+      return "";
+    }
+
+    const parsed = value instanceof Date ? value : value.toDate?.();
+    if (!parsed || Number.isNaN(parsed.getTime())) {
+      return "";
+    }
+
+    const localTime = new Date(
+      parsed.getTime() - parsed.getTimezoneOffset() * 60000,
+    );
+    return localTime.toISOString().slice(0, 16);
   };
 
   if (isCheckingAccess || !isAllowed) {
@@ -137,6 +169,8 @@ export default function AdminTenantsPage() {
     setExistingAadhaarPhotoUrl("");
     setExistingAadhaarPhotoStoragePath("");
     setExistingSupportingDocuments([]);
+    setIsVacating(false);
+    setVacatingAt("");
   };
 
   const onSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
@@ -173,6 +207,8 @@ export default function AdminTenantsPage() {
         existing_aadhaar_photo_url: existingAadhaarPhotoUrl,
         existing_aadhaar_photo_storage_path: existingAadhaarPhotoStoragePath,
         existing_supporting_documents: existingSupportingDocuments,
+        is_vacating: isVacating,
+        vacating_at: isVacating ? vacatingAt : "",
       });
       resetForm();
     } finally {
@@ -378,6 +414,37 @@ export default function AdminTenantsPage() {
                 Is primary tenant
               </label>
 
+              <label className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                <input
+                  type="checkbox"
+                  checked={isVacating}
+                  onChange={(event) => {
+                    const checked = event.target.checked;
+                    setIsVacating(checked);
+                    if (checked && !vacatingAt) {
+                      const now = new Date();
+                      const localNow = new Date(
+                        now.getTime() - now.getTimezoneOffset() * 60000,
+                      );
+                      setVacatingAt(localNow.toISOString().slice(0, 16));
+                    }
+                    if (!checked) {
+                      setVacatingAt("");
+                    }
+                  }}
+                />
+                Vacating tenant
+              </label>
+
+              {isVacating ? (
+                <input
+                  type="datetime-local"
+                  value={vacatingAt}
+                  onChange={(event) => setVacatingAt(event.target.value)}
+                  className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-50"
+                />
+              ) : null}
+
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="submit"
@@ -425,32 +492,34 @@ export default function AdminTenantsPage() {
                         className="h-14 w-14 shrink-0 rounded-full border border-zinc-300 object-cover dark:border-zinc-700"
                       />
                     ) : null}
-                    <div className="flex w-full items-start justify-between gap-2">
-                      <div className="text-base font-bold text-zinc-950 dark:text-zinc-50">
-                        <div className="">
-                          <div className="flex items-center space-x-1">
-                            {tenant.full_name || tenant.name || "Tenant"}{" "}
-                            <span className="text-gray-500 text-sm ml-1">
-                              {tenant.dob &&
-                                calculateAge(
-                                  tenant.dob instanceof Date
-                                    ? tenant.dob
-                                    : tenant.dob.toDate?.() || new Date(),
-                                )}
+                    <div className="flex w-full min-w-0 items-start justify-between gap-2">
+                      <div className="min-w-0 text-base font-bold text-zinc-950 dark:text-zinc-50">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-x-1.5 sm:gap-1.5">
+                            <span className="min-w-0 wrap-break-word">
+                              {tenant.full_name || tenant.name || "Tenant"}
+                            </span>
+                            <span className="text-sm text-gray-500">
+                              {tenant.dob
+                                ? `${calculateAge(
+                                    tenant.dob instanceof Date
+                                      ? tenant.dob
+                                      : tenant.dob.toDate?.() || new Date(),
+                                  )}`
+                                : ""}
                             </span>
                             {tenant.is_primary_tenant && (
                               <span
                                 title={`Primary tenant of property ${getRefId(tenant.property_id) || "-"}`}
-                                className="ml-1 text-green-500"
+                                className="text-green-500"
                               >
                                 ●
                               </span>
                             )}
-                            {/* Show notification icon if they that user has FCm Token */}
                             {tenant.fcmToken && (
                               <span
                                 title="Enabled notifications"
-                                className="ml-1 text-blue-500"
+                                className="text-blue-500"
                               >
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
@@ -467,7 +536,7 @@ export default function AdminTenantsPage() {
                               </span>
                             )}
                           </div>
-                          <div className="text-xs  text-gray-600 font-medium space-x-1">
+                          <div className="flex flex-wrap items-center gap-x-1.5 text-xs font-medium text-gray-600">
                             <span className="font-semibold">
                               {tenant.gender === "male"
                                 ? "Male"
@@ -476,16 +545,26 @@ export default function AdminTenantsPage() {
                                   : "Other"}
                             </span>
                             <span>|</span>
-                            <span className="">
+                            <span>
                               S/O{" "}
                               <span className="capitalize">
                                 {tenant.father_name?.toLowerCase() || "-"}
                               </span>
                             </span>
                           </div>
+                          {tenant.is_vacating && tenant.vacating_at ? (
+                            <p className="mt-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                              Vacated:{" "}
+                              {new Date(
+                                tenant.vacating_at instanceof Date
+                                  ? tenant.vacating_at
+                                  : tenant.vacating_at.toDate?.() || new Date(),
+                              ).toLocaleString()}
+                            </p>
+                          ) : null}
                         </div>
                       </div>
-                      <span className="text-xs bg-zinc-800 px-2 py-0.5 rounded text-gray-600">
+                      <span className="shrink-0 rounded bg-zinc-800 px-2 py-0.5 text-xs text-gray-400">
                         {getRefId(tenant.property_id) || "-"}
                       </span>
                     </div>
@@ -612,6 +691,10 @@ export default function AdminTenantsPage() {
                         setPhoneNumber(tenant.phone_number || "");
                         setPropertyId(getRefId(tenant.property_id));
                         setIsPrimaryTenant(Boolean(tenant.is_primary_tenant));
+                        setIsVacating(Boolean(tenant.is_vacating));
+                        setVacatingAt(
+                          toDateTimeInputValue(tenant.vacating_at) || "",
+                        );
                         setAddress(tenant.permanent_address || "");
                         setPincode(tenant.pincode || "");
                         setGender(tenant.gender || "");

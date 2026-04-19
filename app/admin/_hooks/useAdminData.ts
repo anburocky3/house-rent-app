@@ -56,6 +56,8 @@ export type TenantSummary = {
   supporting_documents?: TenantDocument[];
   property_id?: RefLike;
   is_primary_tenant?: boolean;
+  is_vacating?: boolean;
+  vacating_at?: { toDate?: () => Date } | Date | null;
   permanent_address?: string;
   pincode?: string;
   _deleted?: boolean;
@@ -153,6 +155,8 @@ type UpdateTenantInput = {
   existing_aadhaar_photo_url?: string;
   existing_aadhaar_photo_storage_path?: string;
   existing_supporting_documents?: TenantDocument[];
+  is_vacating?: boolean;
+  vacating_at?: string;
 };
 
 type UpdateSettingsInput = {
@@ -802,6 +806,11 @@ export function useAdminDashboardData() {
         name: input.emergency_contact_name?.trim() || "",
         phone: input.emergency_contact_phone?.trim().replace(/\D/g, "") || "",
       },
+      is_vacating: Boolean(input.is_vacating),
+      vacating_at:
+        input.is_vacating && input.vacating_at
+          ? new Date(input.vacating_at)
+          : null,
       supporting_documents: Array.from(mergedSupportingDocsByName.values()),
       _deleted: false,
       updated_at: serverTimestamp(),
