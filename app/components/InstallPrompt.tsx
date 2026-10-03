@@ -33,11 +33,20 @@ const isIosSafari = () => {
 export default function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
-  const [showIosHelp, setShowIosHelp] = useState(() => isIosSafari());
+  const [showIosHelp, setShowIosHelp] = useState(false);
   const [isInstalled, setIsInstalled] = useState(isStandalone());
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(true);
 
   useEffect(() => {
+    const wasDismissed =
+      window.localStorage.getItem("house-rent-install-dismissed") === "true";
+    setDismissed(wasDismissed);
+    setShowIosHelp(!wasDismissed && isIosSafari());
+
+    if (wasDismissed) {
+      return;
+    }
+
     if (isStandalone()) {
       return;
     }
@@ -70,13 +79,24 @@ export default function InstallPrompt() {
       return;
     }
     await deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
+    const choice = await deferredPrompt.userChoice;
+    if (choice.outcome === "dismissed") {
+      window.localStorage.setItem("house-rent-install-dismissed", "true");
+      setDismissed(true);
+    }
     setDeferredPrompt(null);
+  };
+
+  const handleDismiss = () => {
+    window.localStorage.setItem("house-rent-install-dismissed", "true");
+    setDismissed(true);
+    setDeferredPrompt(null);
+    setShowIosHelp(false);
   };
 
   return (
     <div className="fixed left-1/2 top-5 z-30 w-[min(92%,460px)] -translate-x-1/2">
-      <div className="rounded-2xl border border-zinc-200 bg-white/95 p-4 text-sm text-zinc-700 shadow-xl backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90 dark:text-zinc-200">
+      <div className="rounded-2xl border border-[#d7e2f0] bg-white/95 p-4 text-sm text-[#48617a] shadow-xl backdrop-blur dark:border-[#29435e] dark:bg-[#102337]/95 dark:text-[#c2d8ec]">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">
@@ -98,8 +118,8 @@ export default function InstallPrompt() {
             )}
           </div>
           <button
-            onClick={() => setDismissed(true)}
-            className="rounded-full border border-transparent px-2 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 transition hover:border-zinc-200 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:text-zinc-50"
+            onClick={handleDismiss}
+            className="rounded-full border border-transparent px-2 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[#68809a] transition hover:border-[#cbddec] hover:text-[#2f80ed] dark:text-[#9bb7d1] dark:hover:border-[#31516e] dark:hover:text-white"
             aria-label="Dismiss install prompt"
           >
             Not now
@@ -108,7 +128,7 @@ export default function InstallPrompt() {
         {deferredPrompt ? (
           <button
             onClick={handleInstall}
-            className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-zinc-950 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-50 transition hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
+            className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-[#2f80ed] px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#256fd1]"
           >
             Install
           </button>

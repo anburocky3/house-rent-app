@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import AdminBottomNav from "../_components/AdminBottomNav";
+import AccessLoader from "../../components/AccessLoader";
 import Image from "next/image";
 import { useAdminDashboardData } from "../_hooks/useAdminData";
 
@@ -206,17 +207,13 @@ export default function AdminPropertiesPage() {
   };
 
   if (isCheckingAccess || !isAllowed) {
-    return (
-      <div className="flex min-h-screen items-center justify-center px-6 text-sm text-zinc-600 dark:text-zinc-300">
-        Verifying access...
-      </div>
-    );
+    return <AccessLoader />;
   }
 
   return (
-    <div className="min-h-screen bg-zinc-100 px-4 pb-24 pt-6 font-sans text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
+    <div className="app-surface min-h-screen px-4 pb-28 pt-5 font-sans text-[#1b1f1d]">
       <main className="mx-auto flex w-full max-w-md flex-col gap-4">
-        <section className="rounded-3xl border border-zinc-300 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <section className="app-card rounded-[1.75rem] p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">
             Properties
           </p>
@@ -730,20 +727,80 @@ export default function AdminPropertiesPage() {
                               ) : (
                                 <div className="space-y-1">
                                   {propertyTenants.map((tenant) => (
-                                    <p
+                                    <div
                                       key={tenant.uid}
-                                      className="text-xs text-zinc-900 dark:text-zinc-200"
+                                      className="space-y-1.5"
                                     >
-                                      •{" "}
-                                      {tenant.full_name ||
-                                        tenant.name ||
-                                        "Unknown"}
-                                      {tenant.is_primary_tenant && (
-                                        <span className="ml-1 text-zinc-500">
-                                          (Primary)
-                                        </span>
-                                      )}
-                                    </p>
+                                      <p className="text-xs text-zinc-900 dark:text-zinc-200">
+                                        •{" "}
+                                        {tenant.full_name ||
+                                          tenant.name ||
+                                          "Unknown"}
+                                        {tenant.is_primary_tenant && (
+                                          <span className="ml-1 text-zinc-500">
+                                            (Primary)
+                                          </span>
+                                        )}
+                                      </p>
+                                      {tenant.login_history?.length ? (
+                                        <div className="ml-3 rounded-xl border border-[#dce9f6] bg-[#f7fbff] p-2.5 dark:border-[#29435e] dark:bg-[#10243a]">
+                                          <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#2f80ed] dark:text-[#a7d1ff]">
+                                            <svg
+                                              viewBox="0 0 24 24"
+                                              className="h-3.5 w-3.5"
+                                              fill="none"
+                                              aria-hidden="true"
+                                            >
+                                              <circle
+                                                cx="12"
+                                                cy="12"
+                                                r="8"
+                                                stroke="currentColor"
+                                                strokeWidth="1.7"
+                                              />
+                                              <path
+                                                d="M12 8v4l2.5 1.5"
+                                                stroke="currentColor"
+                                                strokeWidth="1.7"
+                                                strokeLinecap="round"
+                                              />
+                                            </svg>
+                                            Last{" "}
+                                            {Math.min(
+                                              tenant.login_history.length,
+                                              5,
+                                            )}{" "}
+                                            logins
+                                          </div>
+                                          <div className="mt-2 space-y-1.5">
+                                            {tenant.login_history
+                                              .slice(0, 5)
+                                              .map((login, index) => (
+                                                <div
+                                                  key={`${tenant.uid}-login-${login.loggedInAt || index}`}
+                                                  className="flex items-start justify-between gap-2 text-[10px] text-zinc-600 dark:text-zinc-300"
+                                                >
+                                                  <span className="min-w-0 truncate">
+                                                    {login.device ||
+                                                      "Unknown device"}{" "}
+                                                    · {login.ip || "Unknown IP"}
+                                                  </span>
+                                                  <time
+                                                    className="shrink-0 font-medium text-zinc-500 dark:text-zinc-400"
+                                                    dateTime={login.loggedInAt}
+                                                  >
+                                                    {login.loggedInAt
+                                                      ? new Date(
+                                                          login.loggedInAt,
+                                                        ).toLocaleString()
+                                                      : "Unknown time"}
+                                                  </time>
+                                                </div>
+                                              ))}
+                                          </div>
+                                        </div>
+                                      ) : null}
+                                    </div>
                                   ))}
                                 </div>
                               )}

@@ -77,8 +77,8 @@ export default function TenantBottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-3 left-1/2 z-30 w-[min(94%,460px)] -translate-x-1/2">
-      <div className="grid grid-cols-5 gap-1 rounded-2xl border border-zinc-300 bg-white p-2 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
+    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-[#d7e2f0] bg-white/95 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_24px_rgba(37,99,166,0.08)] backdrop-blur-xl dark:border-[#29435e] dark:bg-[#102337]/95">
+      <div className="mx-auto grid w-full max-w-md grid-cols-5 gap-1">
         {items.map((item) => {
           const active = pathname === item.href;
           const Icon = item.Icon;
@@ -88,8 +88,8 @@ export default function TenantBottomNav() {
               href={item.href}
               className={`inline-flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-2 transition ${
                 active
-                  ? "bg-zinc-950 text-zinc-50 dark:bg-zinc-50 dark:text-zinc-950"
-                  : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  ? "bg-[#eaf3fc] text-[#2563a6] dark:bg-[#173452] dark:text-[#a7d1ff]"
+                  : "text-[#68809a] hover:bg-[#f1f6fb] dark:text-[#9bb7d1] dark:hover:bg-[#172d46]"
               }`}
               aria-current={active ? "page" : undefined}
             >

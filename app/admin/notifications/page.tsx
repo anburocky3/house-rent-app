@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import LogoutButton from "../../components/LogoutButton";
 import AdminBottomNav from "../_components/AdminBottomNav";
+import AccessLoader from "../../components/AccessLoader";
 import { useAdminDashboardData } from "../_hooks/useAdminData";
 
 type RecipientMode = "all-tenants" | "by-property" | "by-tenant";
@@ -161,19 +162,15 @@ export default function AdminNotificationsPage() {
   };
 
   if (isCheckingAccess || !isAllowed) {
-    return (
-      <div className="flex min-h-screen items-center justify-center px-6 text-sm text-zinc-600 dark:text-zinc-300">
-        Verifying access...
-      </div>
-    );
+    return <AccessLoader />;
   }
 
   const recipientTenantsCount = getTenantsForRecipients().length;
 
   return (
-    <div className="min-h-screen bg-zinc-100 px-4 pb-24 pt-6 font-sans text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
+    <div className="app-surface min-h-screen px-4 pb-28 pt-5 font-sans text-[#1b1f1d]">
       <main className="mx-auto flex w-full max-w-md flex-col gap-4">
-        <section className="rounded-3xl border border-zinc-300 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <section className="app-card rounded-[1.75rem] p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">

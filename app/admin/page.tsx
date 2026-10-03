@@ -6,6 +6,8 @@ import PushNotificationSetup from "../components/PushNotificationSetup";
 import AdminBottomNav from "./_components/AdminBottomNav";
 import { useAdminDashboardData } from "./_hooks/useAdminData";
 import CopyValueButton from "../components/CopyValueButton";
+import Avatar from "../components/Avatar";
+import AccessLoader from "../components/AccessLoader";
 
 const getRefId = (value?: { id?: string } | string) => {
   if (!value) {
@@ -52,42 +54,36 @@ export default function AdminDashboard() {
   });
 
   if (isCheckingAccess || !isAllowed) {
-    return (
-      <div className="flex min-h-screen items-center justify-center px-6 text-sm text-zinc-600 dark:text-zinc-300">
-        Verifying access...
-      </div>
-    );
+    return <AccessLoader />;
   }
 
   return (
-    <div className="min-h-screen bg-zinc-100 px-4 pb-24 pt-6 font-sans text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
+    <div className="app-surface min-h-screen px-4 pb-28 pt-5 font-sans text-[#1b1f1d]">
       <main className="mx-auto flex w-full max-w-md flex-col gap-4">
-        <section className="rounded-3xl border border-zinc-300 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <section className="app-card rounded-[1.75rem] p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">
-                Admin dashboard
-              </p>
-              <p className="mt-2 text-base font-semibold tracking-tight">
+              <p className="app-label">Owner dashboard</p>
+              <p className="mt-2 text-2xl font-bold tracking-[-0.04em]">
                 Hi, {adminName}
               </p>
             </div>
             <LogoutButton />
           </div>
 
-          <p className="mt-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Update property-level charges and monthly meter details.
+          <p className="mt-1 text-sm text-[#718078]">
+            A quick view of your homes and residents.
           </p>
         </section>
 
         <section className="grid grid-cols-2 gap-3">
-          <article className="rounded-2xl border border-zinc-300 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <article className="app-card rounded-2xl p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400">
               Tenants
             </p>
             <p className="mt-2 text-2xl font-extrabold">{tenants.length}</p>
           </article>
-          <article className="rounded-2xl border border-zinc-300 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <article className="app-card rounded-2xl p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400">
               Open complaints
             </p>
@@ -248,10 +244,17 @@ export default function AdminDashboard() {
                     key={tenant.uid}
                     className="rounded-2xl border border-zinc-300 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950/40 "
                   >
-                    <div className="text-base font-bold text-zinc-600 dark:text-zinc-50 flex justify-between items-center">
-                      <span>
-                        {tenant.full_name || tenant.name || "Tenant"}{" "}
-                      </span>
+                    <div className="flex items-center justify-between gap-3 text-base font-bold text-zinc-600 dark:text-zinc-50">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <Avatar
+                          name={tenant.full_name || tenant.name || "Tenant"}
+                          src={tenant.profile_photo_url}
+                          size="sm"
+                        />
+                        <span className="truncate">
+                          {tenant.full_name || tenant.name || "Tenant"}
+                        </span>
+                      </div>
                       <span className="bg-zinc-800 text-zinc-400 px-2 rounded text-xs">
                         {propertyId || "-"}
                       </span>

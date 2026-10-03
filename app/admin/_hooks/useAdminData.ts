@@ -61,6 +61,15 @@ export type TenantSummary = {
   permanent_address?: string;
   pincode?: string;
   _deleted?: boolean;
+  login_history?: Array<{
+    loggedInAt?: string;
+    ip?: string;
+    device?: string;
+    browser?: string;
+    platform?: string;
+    isMobile?: boolean;
+    userAgent?: string;
+  }>;
 };
 
 export type ComplaintSummary = {

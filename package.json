@@ -12,25 +12,25 @@
     "seed:firestore": "tsx scripts/seed.ts"
   },
   "dependencies": {
-    "@vercel/blob": "^0.27.0",
-    "firebase": "^12.9.0",
+    "@vercel/blob": "^0.27.3",
+    "firebase": "^12.19.0",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "zod": "^3.24.1"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "dotenv": "^16.4.5",
-    "eslint": "^9",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^20.19.43",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "dotenv": "^16.6.1",
+    "eslint": "^9.39.5",
     "eslint-config-next": "16.1.6",
-    "firebase-admin": "^12.6.0",
-    "tailwindcss": "^4",
-    "tsx": "^4.21.0",
-    "typescript": "^5"
+    "firebase-admin": "^12.7.0",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
   },
   "ignoreScripts": [
     "sharp",

@@ -33,6 +33,7 @@ export default function RoleLoginForm({
   subtitle,
   allowCreate,
 }: RoleLoginFormProps) {
+  const isAdmin = role === "admin";
   const router = useRouter();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
@@ -42,6 +43,7 @@ export default function RoleLoginForm({
   }>({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isRoleSwitching, setIsRoleSwitching] = useState(false);
 
   const formSchema = z.object({
     phoneNumber: z
@@ -131,6 +133,43 @@ export default function RoleLoginForm({
     return existing;
   };
 
+  const recordTenantLogin = async (profileId: string, authUser: typeof auth.currentUser) => {
+    if (!authUser) {
+      return;
+    }
+
+    try {
+      const idToken = await authUser.getIdToken();
+      const userAgentData =
+        "userAgentData" in navigator
+          ? (navigator as Navigator & {
+              userAgentData?: { mobile?: boolean };
+            }).userAgentData
+          : undefined;
+      const isMobile =
+        userAgentData?.mobile === true ||
+        /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+      await fetch("/api/login-history", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          profileId,
+          device: isMobile ? "Mobile browser" : "Desktop browser",
+          browser: navigator.userAgent,
+          platform: navigator.platform,
+          isMobile,
+          userAgent: navigator.userAgent,
+        }),
+      });
+    } catch {
+      // Login history is an audit aid and should not block a successful login.
+    }
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
@@ -198,6 +237,10 @@ export default function RoleLoginForm({
         existingProfile.profile,
       );
 
+      if (resolvedRole === "tenant") {
+        await recordTenantLogin(existingProfile.id, user);
+      }
+
       router.replace(resolvedRole === "admin" ? "/admin" : "/tenant");
     } catch (err) {
       // If profile validation fails after auth, sign out to avoid partial session.
@@ -244,24 +287,32 @@ export default function RoleLoginForm({
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-6 py-12">
-      <div className="w-full max-w-lg rounded-3xl border border-zinc-200 bg-white/80 p-8 shadow-xl backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/80">
-        <div className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">
-            Welcome back
-          </p>
-          <h1 className="text-3xl font-semibold text-zinc-950 dark:text-zinc-50">
+    <div className="app-surface flex min-h-screen items-center justify-center px-5 py-10">
+      <div
+        className={`w-full max-w-sm rounded-4xl border bg-white p-7 text-[#122030] shadow-[0_20px_55px_rgba(47,128,237,0.12)] dark:bg-[#102337] dark:text-[#f0f7ff] ${isAdmin ? "admin-login-card border-[#2f80ed] shadow-[0_20px_55px_rgba(47,128,237,0.2)] dark:border-[#70b4ff]" : "border-[#cfe2f8] dark:border-[#31516e]"} ${isRoleSwitching ? "role-card-flipping" : ""}`}
+      >
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <p className="app-label">
+              {role === "admin" ? "Owner access" : "Resident access"}
+            </p>
+            {role === "admin" ? (
+              <span className="rounded-full bg-[#eaf3fc] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#2f80ed] dark:bg-[#173452] dark:text-[#b7d8ff]">
+                Owner
+              </span>
+            ) : null}
+          </div>
+          <h1 className="text-3xl font-bold tracking-[-0.04em] text-[#122030] dark:text-[#f0f7ff]">
             {title}
           </h1>
-          <p className="text-sm text-zinc-600 dark:text-zinc-300">{subtitle}</p>
+          <p className="login-subtitle text-sm leading-6 text-[#68809a] dark:text-[#a9c0d6]">
+            {subtitle}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-6">
           <div className="space-y-2">
-            <label
-              htmlFor="phone"
-              className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400"
-            >
+            <label htmlFor="phone" className="app-label">
               Phone number
             </label>
             <input
@@ -278,10 +329,10 @@ export default function RoleLoginForm({
                   }));
                 }
               }}
-              className={`w-full rounded-2xl border bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition dark:bg-zinc-900 dark:text-zinc-100 ${
+              className={`w-full rounded-2xl border bg-[#f4f8fd] px-4 py-3.5 text-sm text-[#122030] outline-none transition placeholder:text-[#7890a8] focus:bg-white dark:bg-[#12263d] dark:text-[#f0f7ff] dark:placeholder:text-[#91abc4] dark:focus:bg-[#173452] ${
                 fieldErrors.phoneNumber
                   ? "border-red-400 focus:border-red-500 dark:border-red-500"
-                  : "border-zinc-200 focus:border-zinc-950 dark:border-zinc-800 dark:focus:border-zinc-50"
+                  : "border-[#cfe2f8] focus:border-[#2f80ed] dark:border-[#31516e] dark:focus:border-[#93c5fd]"
               }`}
               placeholder="+91 9876543211"
             />
@@ -293,10 +344,7 @@ export default function RoleLoginForm({
           </div>
 
           <div className="space-y-2">
-            <label
-              htmlFor="password"
-              className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400"
-            >
+            <label htmlFor="password" className="app-label">
               Password
             </label>
             <input
@@ -313,10 +361,10 @@ export default function RoleLoginForm({
                   }));
                 }
               }}
-              className={`w-full rounded-2xl border bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition dark:bg-zinc-900 dark:text-zinc-100 ${
+              className={`w-full rounded-2xl border bg-[#f4f8fd] px-4 py-3.5 text-sm text-[#122030] outline-none transition placeholder:text-[#7890a8] focus:bg-white dark:bg-[#12263d] dark:text-[#f0f7ff] dark:placeholder:text-[#91abc4] dark:focus:bg-[#173452] ${
                 fieldErrors.password
                   ? "border-red-400 focus:border-red-500 dark:border-red-500"
-                  : "border-zinc-200 focus:border-zinc-950 dark:border-zinc-800 dark:focus:border-zinc-50"
+                  : "border-[#cfe2f8] focus:border-[#2f80ed] dark:border-[#31516e] dark:focus:border-[#93c5fd]"
               }`}
               placeholder="••••••••"
             />
@@ -336,16 +384,20 @@ export default function RoleLoginForm({
           <button
             type="submit"
             disabled={loading}
-            className="inline-flex w-full items-center justify-center rounded-full bg-zinc-950 px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-50 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
+            className="inline-flex w-full items-center justify-center rounded-2xl bg-[#2f80ed] px-4 py-3.5 text-sm font-bold text-white transition hover:bg-[#256fd1] disabled:cursor-not-allowed disabled:opacity-70"
           >
             {loading ? "Signing in..." : "Continue"}
           </button>
-          {/* add the owner login link */}
-          <div className=" text-center">
+          <div className="text-center">
             {role === "tenant" && (
               <a
                 href="/login/super"
-                className="text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-50"
+                onClick={(event) => {
+                  event.preventDefault();
+                  setIsRoleSwitching(true);
+                  window.setTimeout(() => router.push("/login/super"), 560);
+                }}
+                className="text-sm font-semibold text-[#2f80ed] hover:underline dark:text-[#93c5fd]"
               >
                 Login as Owner
               </a>
@@ -354,7 +406,12 @@ export default function RoleLoginForm({
             {role === "admin" && (
               <a
                 href="/login"
-                className="text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-50"
+                onClick={(event) => {
+                  event.preventDefault();
+                  setIsRoleSwitching(true);
+                  window.setTimeout(() => router.push("/login"), 560);
+                }}
+                className="text-sm font-semibold text-[#2f80ed] hover:underline dark:text-[#93c5fd]"
               >
                 Tenant Login
               </a>

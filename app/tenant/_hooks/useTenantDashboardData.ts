@@ -18,6 +18,7 @@ export type TenantProfile = {
   role?: string;
   full_name?: string;
   name?: string;
+  profile_photo_url?: string;
   phone_number?: string;
   permanent_address?: string;
   pincode?: string;
@@ -100,6 +101,7 @@ export type BillingLedger = {
 
 export type OwnerProfile = {
   full_name?: string;
+  profile_photo_url?: string;
   phone_number?: string;
   upi_id?: string;
   emergency_contact?: {
@@ -128,6 +130,10 @@ export function useTenantDashboardData() {
   );
   const [tenants, setTenants] = useState<TenantProfile[]>([]);
   const [ownerProfile, setOwnerProfile] = useState<OwnerProfile | null>(null);
+  const tenantPhotoUrl =
+    typeof currentProfile?.profile_photo_url === "string"
+      ? currentProfile.profile_photo_url
+      : undefined;
 
   useEffect(() => {
     if (isCheckingAccess || !isAllowed || !currentUserUid) {
@@ -284,6 +290,7 @@ export function useTenantDashboardData() {
     isAllowed,
     isCheckingAccess,
     tenantName,
+    tenantPhotoUrl,
     tenantUid,
     propertyId,
     propertyDetails,

@@ -6,7 +6,11 @@ import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/firebaseConfig";
 import LogoutButton from "../../components/LogoutButton";
 import AdminBottomNav from "../_components/AdminBottomNav";
-import { disableNotifications, resolveUserDocId } from "@/lib/notificationUtils";
+import AccessLoader from "../../components/AccessLoader";
+import {
+  disableNotifications,
+  resolveUserDocId,
+} from "@/lib/notificationUtils";
 import { useAdminDashboardData } from "../_hooks/useAdminData";
 
 const normalizePhone = (value: string) => value.replace(/\D/g, "");
@@ -80,11 +84,7 @@ export default function AdminSettingsPage() {
   }, [checkNotificationStatus]);
 
   if (isCheckingAccess || !isAllowed) {
-    return (
-      <div className="flex min-h-screen items-center justify-center px-6 text-sm text-zinc-600 dark:text-zinc-300">
-        Verifying access...
-      </div>
-    );
+    return <AccessLoader />;
   }
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -166,9 +166,9 @@ export default function AdminSettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-100 px-4 pb-24 pt-6 font-sans text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
+    <div className="app-surface min-h-screen px-4 pb-28 pt-5 font-sans text-[#1b1f1d]">
       <main className="mx-auto flex w-full max-w-md flex-col gap-4">
-        <section className="rounded-3xl border border-zinc-300 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <section className="app-card rounded-[1.75rem] p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">
             Settings
           </p>
@@ -278,7 +278,9 @@ export default function AdminSettingsPage() {
                 disabled={disablingNotifications}
                 className="mt-3 inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-red-300 bg-red-50 px-3 text-sm font-bold text-red-900 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-700 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950"
               >
-                {disablingNotifications ? "Disabling..." : "Disable notifications"}
+                {disablingNotifications
+                  ? "Disabling..."
+                  : "Disable notifications"}
               </button>
             ) : null}
           </div>

@@ -8,12 +8,71 @@ import TenantBottomNav from "./_components/TenantBottomNav";
 import { useTenantDashboardData } from "./_hooks/useTenantDashboardData";
 import { initiateUPIPayment } from "@/lib/upiPayment";
 import { useToast } from "../components/Toast";
+import Avatar from "../components/Avatar";
+import AccessLoader from "../components/AccessLoader";
 
+const MeterIcon = () => (
+  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
+    <g
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.5"
+    >
+      <path d="M18.156 16.314c-2.583 2.085-5.177 1.491-6.469 1.491s-1.373.262-2.321 1.27a1.3 1.3 0 0 1-.424.302a1.22 1.22 0 0 1-1.01 0a1.3 1.3 0 0 1-.433-.303l-2.594-2.568a1.3 1.3 0 0 1-.303-.454a1.3 1.3 0 0 1-.101-.514a1.23 1.23 0 0 1 .404-.937c1.009-.947 1.292-1.128 1.292-2.327c0-1.51-.717-4.372 2.24-7.334a7.4 7.4 0 0 1 2.523-1.662a7.5 7.5 0 0 1 3.028-.524a7.47 7.47 0 0 1 5.45 2.61a7.52 7.52 0 0 1 .8 8.662a7.5 7.5 0 0 1-2.051 2.288zm-13.554-.01l-1.514 1.511a1.01 1.01 0 0 0-.202 1.26l2.11 2.014c.282.292.847.172 1.291-.242l1.423-1.52" />
+      <path d="m15.248 5.873l-5.063 4.273a.3.3 0 0 0-.094.12a.4.4 0 0 0-.036.155a.3.3 0 0 0 .067.136a.3.3 0 0 0 .134.031l2.913.68l-1.26 3.382a.14.14 0 0 0-.014.063l.052.012l.062.014l5.063-4.273a.22.22 0 0 0 .212-.114a.3.3 0 0 0 .037-.155a.3.3 0 0 0-.067-.136a.3.3 0 0 0-.135-.031l-2.902-.677l1.172-3.338a.07.07 0 0 0 .015-.062l-.063-.014z" />
+    </g>
+  </svg>
+);
+
+const PhoneIcon = () => (
+  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden="true">
+    <path
+      d="M7 4h3l1.5 4-2 1.5a14 14 0 0 0 5 5L16 12l4 1.5v3c0 1-.8 1.8-1.8 1.8C10.4 18.3 5.7 13.6 5.7 5.8 5.7 4.8 6.3 4 7 4Z"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const CalendarIcon = () => (
+  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden="true">
+    <rect
+      x="4"
+      y="5"
+      width="16"
+      height="15"
+      rx="2"
+      stroke="currentColor"
+      strokeWidth="1.7"
+    />
+    <path
+      d="M8 3v4m8-4v4M4 9h16"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
+const HomeIcon = () => (
+  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden="true">
+    <path
+      d="m4 11 8-6 8 6v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
 export default function TenantDashboard() {
   const {
     isAllowed,
     isCheckingAccess,
     tenantName,
+    tenantPhotoUrl,
     propertyDetails,
     ledgers,
     pendingLedger,
@@ -22,19 +81,10 @@ export default function TenantDashboard() {
     formatINR,
     toTelHref,
   } = useTenantDashboardData();
-
   const [paymentStatusMessage, setPaymentStatusMessage] = useState<
     string | null
   >(null);
   const toast = useToast();
-
-  if (isCheckingAccess || !isAllowed) {
-    return (
-      <div className="flex min-h-screen items-center justify-center px-6 text-sm text-zinc-600 dark:text-zinc-300">
-        Verifying access...
-      </div>
-    );
-  }
 
   const rentAmount = propertyDetails?.rent_amount ?? 0;
   const waterCost = propertyDetails?.water_charge ?? 0;
@@ -216,17 +266,23 @@ export default function TenantDashboard() {
     : "No pending rent due right now. The last billing cycle is already marked as paid in billing ledger.";
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-zinc-100 px-4 pb-24 pt-6 font-sans text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
+    <div className="app-surface min-h-screen overflow-x-hidden px-4 pb-28 pt-5 font-sans text-[#1b1f1d]">
       <main className="mx-auto flex w-full max-w-md flex-col gap-4">
-        <section className="rounded-3xl border border-zinc-300 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <section className="app-card rounded-[1.75rem] p-5">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-base font-semibold tracking-tight">
-              Hi, {tenantName}
-            </p>
+            <div className="flex items-center gap-3">
+              <Avatar name={tenantName} src={tenantPhotoUrl} size="md" />
+              <div>
+                <p className="app-label">Resident dashboard</p>
+                <p className="mt-2 text-2xl font-bold tracking-[-0.04em]">
+                  Hi, {tenantName}
+                </p>
+              </div>
+            </div>
             <LogoutButton />
           </div>
-          <p className="mt-2 text-sm font-medium text-zinc-700 dark:text-zinc-200">
-            Know your rent details, payment history, and owner info.
+          <p className="mt-2 text-sm text-[#718078]">
+            Your rent, payments, and home details in one place.
           </p>
         </section>
 
@@ -463,28 +519,34 @@ export default function TenantDashboard() {
                     return (
                       <div
                         key={ledger.month_year}
-                        className="flex items-center justify-between rounded-xl border border-zinc-300 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950/40"
+                        className="flex items-center gap-3 rounded-2xl border border-[#dce9f6] bg-[#f7fbff] p-3.5 transition hover:border-[#a8cef4] dark:border-[#29435e] dark:bg-[#10243a] dark:hover:border-[#477ba8]"
                       >
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eaf3fc] text-[#2f80ed] dark:bg-[#173452] dark:text-[#a7d1ff]">
+                          <MeterIcon />
+                        </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                          <p className="text-sm font-bold text-[#122030] dark:text-[#f0f7ff]">
                             {ledger.month_year}
                           </p>
-                          <p className="mt-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                          <p className="mt-1 text-xs font-medium text-[#68809a] dark:text-[#9bb7d1]">
                             {`${prev} - ${cur} = ${units}`}
                           </p>
                         </div>
                         <div className="ml-2 text-right">
-                          <p className="text-sm font-bold text-zinc-950 dark:text-zinc-50">
+                          <p className="text-base font-extrabold text-[#122030] dark:text-[#f0f7ff]">
                             {formatINR.format(ledgerCost)}
                           </p>
-                          <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                          <p className="text-[11px] font-medium text-[#68809a] dark:text-[#9bb7d1]">
                             for {units} unit{units === 1 ? "" : "s"}
                           </p>
-                          <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                          <span
+                            className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${ledger.payment_status === "paid" ? "bg-[#e5f7ef] text-[#16805a] dark:bg-[#123e35] dark:text-[#79dfb5]" : "bg-[#fff4d9] text-[#9a6712] dark:bg-[#4c3b19] dark:text-[#ffd88a]"}`}
+                          >
+                            <span className="h-1.5 w-1.5 rounded-full bg-current" />
                             {ledger.payment_status === "paid"
-                              ? "✓ Paid"
+                              ? "Paid"
                               : "Pending"}
-                          </p>
+                          </span>
                         </div>
                       </div>
                     );
@@ -509,17 +571,26 @@ export default function TenantDashboard() {
                     key={tenant.uid || displayName}
                     className="rounded-2xl border border-zinc-300 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950/40"
                   >
-                    <p className="text-base font-bold text-zinc-950 dark:text-zinc-50">
-                      {displayName}
-                    </p>
-                    <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                      {tenant.is_primary_tenant
-                        ? "Primary tenant"
-                        : "Co-tenant"}
-                    </p>
+                    <div className="flex items-center gap-3">
+                      <Avatar
+                        name={displayName}
+                        src={tenant.profile_photo_url}
+                        size="md"
+                      />
+                      <div className="min-w-0">
+                        <p className="truncate text-base font-bold text-zinc-950 dark:text-zinc-50">
+                          {displayName}
+                        </p>
+                        <p className="mt-0.5 text-xs font-semibold text-[#68809a] dark:text-[#9bb7d1]">
+                          {tenant.is_primary_tenant
+                            ? "Primary tenant"
+                            : "Co-tenant"}
+                        </p>
+                      </div>
+                    </div>
                     <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300">
                       <div className="flex min-w-0 items-center gap-2 rounded-xl border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
-                        <span aria-hidden="true">📞</span>
+                        <PhoneIcon />
                         {tenantPhone ? (
                           <>
                             <a
@@ -538,7 +609,7 @@ export default function TenantDashboard() {
                         )}
                       </div>
                       <div className="flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
-                        <span aria-hidden="true">📅</span>
+                        <CalendarIcon />
                         <span>
                           Entered on{" "}
                           {tenant.tenant_entered
@@ -547,7 +618,7 @@ export default function TenantDashboard() {
                         </span>
                       </div>
                       <div className="col-span-2 flex min-w-0 items-center gap-2 rounded-xl border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
-                        <span aria-hidden="true">🏠</span>
+                        <HomeIcon />
                         <span className="min-w-0 flex-1 truncate">
                           {tenantAddress || "-"}
                         </span>
